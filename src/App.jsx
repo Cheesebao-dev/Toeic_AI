@@ -82,6 +82,7 @@ const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#14b
 const AUTH_VISUAL_SLIDES = [
   {
     id: 'practice',
+    kind: 'practice',
     nodes: { top: 'AI', middle: 'T', bottom: '990' },
     panelTitle: 'Practice',
     filters: ['Full test', 'Today'],
@@ -95,6 +96,7 @@ const AUTH_VISUAL_SLIDES = [
   },
   {
     id: 'mistakes',
+    kind: 'mistakes',
     nodes: { top: 'AI', middle: 'P5', bottom: 'Fix' },
     panelTitle: 'Mistakes',
     filters: ['Part 5', 'Review'],
@@ -108,6 +110,7 @@ const AUTH_VISUAL_SLIDES = [
   },
   {
     id: 'progress',
+    kind: 'progress',
     nodes: { top: 'L/R', middle: 'T', bottom: '990' },
     panelTitle: 'Progress',
     filters: ['Score', 'Trend'],
@@ -370,12 +373,121 @@ function EmptyState({ title, action }) {
   );
 }
 
+function PracticeAuthVisual({ slide }) {
+  return (
+    <div className="connect-illustration">
+      <div className="connect-orb"></div>
+      <svg className="connector-path" viewBox="0 0 430 360" focusable="false">
+        <path d="M106 94 H166 V302 H106 M74 200 H270" />
+      </svg>
+      <div className="connector-node node-ai">
+        <span className="node-ai-mark">{slide.nodes.top}</span>
+      </div>
+      <div className="connector-node node-toeic">
+        <span className="node-app-mark">{slide.nodes.middle}</span>
+      </div>
+      <div className="connector-node node-score">
+        <span className="node-score-mark">{slide.nodes.bottom}</span>
+      </div>
+      <div className="dashboard-card">
+        <div className="dash-top">
+          <div>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <strong>{slide.panelTitle}</strong>
+        </div>
+        <div className="dash-filter-row">
+          {slide.filters.map((filter) => (
+            <span key={filter}>{filter}</span>
+          ))}
+        </div>
+        {slide.rows.map((row) => (
+          <div className="dash-row" key={row.label}>
+            <strong className={row.avatar}></strong>
+            <div>
+              <span>{row.label}</span>
+              <small>{row.detail}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MistakeAuthVisual() {
+  return (
+    <div className="mistake-illustration">
+      <div className="mistake-ai-node">AI</div>
+      <section className="mistake-question-card">
+        <div className="mini-window-row">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <strong>Part 5 - Question 128</strong>
+        <p>The report was prepared _____ the deadline.</p>
+        <div className="answer-choice-row">
+          <span className="wrong">A. despite</span>
+          <span className="correct">B. before</span>
+        </div>
+      </section>
+      <section className="mistake-feedback-card">
+        <span>AI explanation</span>
+        <strong>Preposition of time</strong>
+        <p>Use "before" with a deadline. Save this as a repeat review item.</p>
+        <div className="review-status-row">
+          <i></i>
+          <small>Needs review</small>
+        </div>
+      </section>
+      <div className="mistake-tag tag-reading">P5</div>
+      <div className="mistake-tag tag-fix">Fix</div>
+    </div>
+  );
+}
+
+function ProgressAuthVisual() {
+  return (
+    <div className="progress-illustration">
+      <section className="score-summary-card">
+        <span>Estimated score</span>
+        <strong>720</strong>
+        <small>Target 990</small>
+      </section>
+      <section className="progress-chart-card">
+        <div className="chart-heading">
+          <strong>Weekly trend</strong>
+          <span>+45 pts</span>
+        </div>
+        <div className="bar-chart-mini">
+          <i style={{ height: '42%' }}></i>
+          <i style={{ height: '58%' }}></i>
+          <i style={{ height: '49%' }}></i>
+          <i style={{ height: '72%' }}></i>
+          <i style={{ height: '84%' }}></i>
+        </div>
+      </section>
+      <div className="skill-pill listening">Listening 82%</div>
+      <div className="skill-pill reading">Reading 76%</div>
+      <div className="skill-pill weak">Weak: Part 7</div>
+    </div>
+  );
+}
+
+function AuthVisualArtwork({ slide }) {
+  if (slide.kind === 'mistakes') return <MistakeAuthVisual />;
+  if (slide.kind === 'progress') return <ProgressAuthVisual />;
+  return <PracticeAuthVisual slide={slide} />;
+}
+
 function AuthGate({ error, onSubmit }) {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [visualIndex, setVisualIndex] = useState(0);
-  const visualSlide = AUTH_VISUAL_SLIDES[visualIndex];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -475,53 +587,23 @@ function AuthGate({ error, onSubmit }) {
         </section>
 
         <section className="auth-visual split-visual" aria-hidden="true">
-          <div className="connect-illustration">
-            <div className="connect-orb"></div>
-            <svg className="connector-path" viewBox="0 0 430 360" focusable="false">
-              <path d="M106 94 H166 V302 H106 M74 200 H270" />
-            </svg>
-            <div className="connector-node node-ai">
-              <span className="node-ai-mark">{visualSlide.nodes.top}</span>
-            </div>
-            <div className="connector-node node-toeic">
-              <span className="node-app-mark">{visualSlide.nodes.middle}</span>
-            </div>
-            <div className="connector-node node-score">
-              <span className="node-score-mark">{visualSlide.nodes.bottom}</span>
-            </div>
-            <div className="dashboard-card" key={visualSlide.id}>
-              <div className="dash-top">
-                <div>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <strong>{visualSlide.panelTitle}</strong>
-              </div>
-              <div className="dash-filter-row">
-                {visualSlide.filters.map((filter) => (
-                  <span key={filter}>{filter}</span>
-                ))}
-              </div>
-              {visualSlide.rows.map((row) => (
-                <div className="dash-row" key={row.label}>
-                  <strong className={row.avatar}></strong>
-                  <div>
-                    <span>{row.label}</span>
-                    <small>{row.detail}</small>
+          <div className="auth-slide-viewport">
+            <div className="auth-slide-track" style={{ transform: `translateX(-${visualIndex * 100}%)` }}>
+              {AUTH_VISUAL_SLIDES.map((slide) => (
+                <article className={`auth-visual-slide ${slide.kind}`} key={slide.id}>
+                  <AuthVisualArtwork slide={slide} />
+                  <div className="visual-copy">
+                    <h2>{slide.title}</h2>
+                    <p>{slide.description}</p>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
-          <div className="visual-copy" key={`${visualSlide.id}-copy`}>
-            <h2>{visualSlide.title}</h2>
-            <p>{visualSlide.description}</p>
-            <div className="visual-dots">
-              {AUTH_VISUAL_SLIDES.map((slide, index) => (
-                <span className={index === visualIndex ? 'active' : ''} key={slide.id}></span>
-              ))}
-            </div>
+          <div className="visual-dots">
+            {AUTH_VISUAL_SLIDES.map((slide, index) => (
+              <span className={index === visualIndex ? 'active' : ''} key={slide.id}></span>
+            ))}
           </div>
         </section>
       </div>
