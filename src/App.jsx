@@ -9,6 +9,8 @@ import {
   Cloud,
   Download,
   Edit3,
+  Eye,
+  EyeOff,
   FileText,
   Filter,
   LayoutDashboard,
@@ -329,6 +331,7 @@ function EmptyState({ title, action }) {
 function AuthGate({ error, onSubmit }) {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
 
   function submit(event) {
     event.preventDefault();
@@ -371,69 +374,96 @@ function AuthGate({ error, onSubmit }) {
         </section>
 
         <section className="access-panel">
-          <div className="auth-heading">
-            <span>{mode === 'login' ? 'Welcome back' : 'Create workspace'}</span>
-            <h1>{mode === 'login' ? 'Đăng nhập hệ thống' : 'Đăng ký tài khoản'}</h1>
-            <div className="heading-line"></div>
-          </div>
-
-          <div className="auth-tabs">
+          <div className="auth-card-tabs">
             <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
-              Đăng nhập
+              Đăng Nhập
+              {mode === 'login' && <span />}
             </button>
             <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
-              Đăng ký
+              Đăng Ký
+              {mode === 'register' && <span />}
             </button>
           </div>
 
-          <form onSubmit={submit} className="auth-form">
-            {mode === 'register' && (
-              <label className="auth-input">
-                <UserRound size={18} />
-                <input
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  autoFocus
-                  placeholder="Tên hiển thị"
-                  autoComplete="name"
-                />
-              </label>
-            )}
-            <label className="auth-input">
-              <Mail size={18} />
-              <input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                autoFocus={mode === 'login'}
-                placeholder="Email đăng nhập"
-                autoComplete="email"
-              />
-            </label>
-            <label className="auth-input">
-              <Lock size={18} />
-              <input
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
-                placeholder="Mật khẩu"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              />
-            </label>
-
-            <div className="auth-meta-row">
-              <label>
-                <input type="checkbox" defaultChecked />
-                <span>Ghi nhớ đăng nhập</span>
-              </label>
-              <span>TOEIC Tracker AI</span>
+          <div className="auth-card-body">
+            <div className="auth-heading">
+              <h1>{mode === 'login' ? 'Chào mừng bạn quay lại!' : 'Tạo tài khoản học TOEIC'}</h1>
+              <p>{mode === 'login' ? 'Vui lòng đăng nhập để tiếp tục' : 'Lưu tiến độ, lỗi sai và báo cáo AI theo tài khoản riêng'}</p>
             </div>
 
-            {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-            <button className="auth-submit" type="submit">
-              {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-            </button>
-          </form>
+            <form onSubmit={submit} className="auth-form">
+              {mode === 'register' && (
+                <label className="auth-input-row">
+                  <UserRound size={20} />
+                  <input
+                    value={form.name}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    autoFocus
+                    placeholder="Tên hiển thị"
+                    autoComplete="name"
+                  />
+                </label>
+              )}
+              <label className="auth-input-row">
+                {mode === 'login' ? <UserRound size={20} /> : <Mail size={20} />}
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm({ ...form, email: event.target.value })}
+                  autoFocus={mode === 'login'}
+                  placeholder={mode === 'login' ? 'Tên tài khoản / Email' : 'Email đăng ký'}
+                  autoComplete="email"
+                />
+              </label>
+              <label className="auth-input-row">
+                <Lock size={20} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  placeholder="Mật khẩu"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((current) => !current)}
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </label>
+
+              <div className="auth-meta-row">
+                <label>
+                  <input type="checkbox" defaultChecked />
+                  <span>Ghi nhớ tôi</span>
+                </label>
+                <button type="button">Quên mật khẩu?</button>
+              </div>
+
+              {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
+              <button className="auth-submit" type="submit">
+                {mode === 'login' ? 'Đăng Nhập' : 'Tạo Tài Khoản'}
+              </button>
+
+              <div className="auth-divider">
+                <span>{mode === 'login' ? 'Hoặc đăng nhập bằng' : 'Hoặc tiếp tục với'}</span>
+              </div>
+
+              <div className="auth-social-grid">
+                <button type="button" className="auth-social-button">
+                  <span className="social-mark google">G</span>
+                  Google
+                </button>
+                <button type="button" className="auth-social-button">
+                  <span className="social-mark facebook">f</span>
+                  Facebook
+                </button>
+              </div>
+            </form>
+          </div>
         </section>
       </div>
     </main>
