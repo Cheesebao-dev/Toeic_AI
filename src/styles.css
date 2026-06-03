@@ -2275,11 +2275,12 @@ body::before {
 
 .app-shell {
   isolation: isolate;
-  background: transparent;
+  background: #ffffff;
 }
 
 .main-area {
   padding: 26px 30px 42px;
+  background: #ffffff;
 }
 
 .sidebar {
