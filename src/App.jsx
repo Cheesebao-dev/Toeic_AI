@@ -4,6 +4,7 @@ import {
   BarChart3,
   Brain,
   CalendarDays,
+  ChevronDown,
   CheckCircle2,
   ClipboardList,
   Cloud,
@@ -828,9 +829,276 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
   );
 }
 
+function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
+  const sessionsByDate = [...sessions].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const recentSessions = [...sessionsByDate].reverse().slice(0, 4);
+  const scoreHistory = sessionsByDate
+    .map((session) => {
+      const calc = calculateSession(session);
+      return {
+        date: session.date?.slice(5) || '',
+        score: calc.totalScore || null,
+        accuracy: calc.accuracy,
+      };
+    })
+    .filter((item) => item.score || item.accuracy);
+  const mistakePie = Object.entries(stats.mistakeTypeCounts).map(([name, value]) => ({ name, value }));
+  const latestReport = reports[0];
+  const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2].score || 0 : 0;
+  const scoreDelta = stats.latestScore && previousScore ? stats.latestScore - previousScore : 0;
+  const reviewData = [
+    { name: 'Cần xử lý', value: stats.openMistakes, color: '#df4d8d' },
+    { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#22a783' },
+  ];
+  const reviewTotal = reviewData.reduce((sum, item) => sum + item.value, 0);
+  const openMistakePercent = reviewTotal ? Math.round((stats.openMistakes / reviewTotal) * 100) : 0;
+  const focusParts = [...stats.partAccuracy]
+    .filter((part) => part.total > 0)
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .slice(0, 4);
+
+  return (
+    <div className="overview-v2">
+      <section className="overview-command">
+        <div>
+          <span className="overview-eyebrow">Dashboard</span>
+          <h1>Tổng quan luyện đề</h1>
+          <p>Theo dõi điểm, độ chính xác, lỗi sai và nhịp học TOEIC trong một màn hình.</p>
+        </div>
+        <div className="overview-command-actions">
+          <button className="ghost-button" onClick={() => setActiveTab('ai')}>
+            <Sparkles size={18} />
+            Phân tích AI
+          </button>
+          <button className="primary-button" onClick={() => setActiveTab('journal')}>
+            <Plus size={18} />
+            Thêm nhật ký
+          </button>
+        </div>
+      </section>
+
+      <section className="overview-kpi-grid">
+        <article className="overview-kpi-card primary">
+          <button className="overview-kpi-arrow" type="button" aria-label="Mở nhật ký" onClick={() => setActiveTab('journal')}>
+            <Plus size={18} />
+          </button>
+          <span>Điểm ước tính</span>
+          <strong>{stats.latestScore || 0}</strong>
+          <small>
+            {scoreDelta
+              ? `${scoreDelta > 0 ? '+' : ''}${scoreDelta} so với lần trước`
+              : 'Mục tiêu 990 TOEIC'}
+          </small>
+        </article>
+
+        <article className="overview-kpi-card">
+          <button className="overview-kpi-arrow" type="button" aria-label="Mở nhật ký" onClick={() => setActiveTab('journal')}>
+            <CalendarDays size={17} />
+          </button>
+          <span>Buổi luyện</span>
+          <strong>{stats.sessions}</strong>
+          <small>{stats.minutes} phút đã ghi nhận</small>
+        </article>
+
+        <article className="overview-kpi-card">
+          <button className="overview-kpi-arrow" type="button" aria-label="Xem tiến độ" onClick={() => setActiveTab('overview')}>
+            <BarChart3 size={17} />
+          </button>
+          <span>Accuracy</span>
+          <strong>{stats.accuracy}%</strong>
+          <small>{stats.totalCorrect}/{stats.totalQuestions} câu đúng</small>
+        </article>
+
+        <article className="overview-kpi-card margin-card">
+          <button className="overview-kpi-arrow" type="button" aria-label="Mở sổ lỗi sai" onClick={() => setActiveTab('mistakes')}>
+            <AlertCircle size={17} />
+          </button>
+          <span>Lỗi đang mở</span>
+          <strong>{stats.openMistakes}</strong>
+          <small>Top lỗi: {stats.topMistakeType}</small>
+          <div className="kpi-wave" aria-hidden="true"></div>
+        </article>
+      </section>
+
+      <section className="overview-report-grid">
+        <article className="overview-chart-card score-report-card">
+          <div className="overview-card-heading">
+            <div>
+              <h2>Practice Report Area</h2>
+              <span>Accuracy theo từng Part TOEIC</span>
+            </div>
+            <button className="overview-chip-button" type="button">Monthly</button>
+          </div>
+          {stats.partAccuracy.some((part) => part.total > 0) ? (
+            <div className="overview-line-chart">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.partAccuracy}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
+                  <XAxis dataKey="part" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Bar dataKey="accuracy" radius={[10, 10, 4, 4]}>
+                    {stats.partAccuracy.map((entry, index) => (
+                      <Cell key={entry.part} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState title="Chưa có lịch sử luyện đề" />
+          )}
+        </article>
+
+        <article className="overview-chart-card activity-card">
+          <div className="overview-card-heading">
+            <div>
+              <h2>Review Activity</h2>
+              <span>Trạng thái lỗi sai</span>
+            </div>
+            <button className="overview-chip-button" type="button">Review</button>
+          </div>
+          <div className="activity-layout">
+            <div className="activity-donut">
+              <div
+                className={`activity-ring ${reviewTotal ? '' : 'empty'}`}
+                style={{ '--activity-open': `${openMistakePercent}%` }}
+              >
+                <div className="activity-center">
+                  <strong>{reviewTotal}</strong>
+                  <span>Tổng lỗi</span>
+                </div>
+              </div>
+            </div>
+            <div className="activity-legend">
+              <div>
+                <strong>{stats.openMistakes}</strong>
+                <span><i className="legend-pink"></i>Cần xử lý</span>
+              </div>
+              <div>
+                <strong>{stats.fixedMistakes}</strong>
+                <span><i className="legend-green"></i>Đã khắc phục</span>
+              </div>
+              <div>
+                <strong>{stats.weakestPart}</strong>
+                <span><i className="legend-blue"></i>Part yếu</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="overview-lower-grid">
+        <article className="overview-chart-card">
+          <div className="overview-card-heading">
+            <div>
+              <h2>Buổi luyện gần đây</h2>
+              <span>Nhật ký mới nhất</span>
+            </div>
+            <button className="overview-chip-button" type="button" onClick={() => setActiveTab('journal')}>Xem tất cả</button>
+          </div>
+          <div className="overview-table">
+            {recentSessions.length ? (
+              recentSessions.map((session) => {
+                const calc = calculateSession(session);
+                return (
+                  <article className="overview-table-row" key={session.id}>
+                    <div className="session-avatar">{session.title?.slice(0, 1).toUpperCase() || 'T'}</div>
+                    <div>
+                      <strong>{session.title || 'Buổi luyện TOEIC'}</strong>
+                      <span>{session.date} - {session.mode}</span>
+                    </div>
+                    <span className="session-pill">{calc.accuracy}%</span>
+                    <strong className="session-score">{calc.totalScore || '-'}</strong>
+                  </article>
+                );
+              })
+            ) : (
+              <EmptyState title="Chưa có buổi luyện" />
+            )}
+          </div>
+        </article>
+
+        <article className="overview-chart-card">
+          <div className="overview-card-heading">
+            <div>
+              <h2>Part cần tập trung</h2>
+              <span>Ưu tiên theo accuracy thấp</span>
+            </div>
+            <button className="overview-chip-button" type="button" onClick={() => setActiveTab('mistakes')}>Sổ lỗi</button>
+          </div>
+          <div className="part-focus-list">
+            {(focusParts.length ? focusParts : stats.partAccuracy.slice(0, 4)).map((part) => (
+              <div className="part-focus-row" key={part.fullPart}>
+                <div>
+                  <strong>{part.fullPart}</strong>
+                  <span>{part.skill}</span>
+                </div>
+                <div className="part-focus-meter" style={{ '--part-value': `${part.accuracy}%` }}>
+                  <span></span>
+                </div>
+                <strong>{part.accuracy}%</strong>
+              </div>
+            ))}
+          </div>
+          {mistakePie.length ? (
+            <div className="mistake-type-strip">
+              {mistakePie.slice(0, 4).map((item, index) => (
+                <span key={item.name} style={{ '--strip-color': PIE_COLORS[index % PIE_COLORS.length] }}>
+                  {item.name} · {item.value}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="overview-note-line">Chưa có lỗi sai được lưu.</p>
+          )}
+        </article>
+      </section>
+
+      {latestReport && (
+        <section className="overview-chart-card overview-report-note">
+          <div className="overview-card-heading">
+            <div>
+              <h2>Báo cáo mới nhất</h2>
+              <span>{latestReport.createdAt}</span>
+            </div>
+            <button className="overview-chip-button" type="button" onClick={() => setActiveTab('reports')}>Báo cáo</button>
+          </div>
+          <pre className="markdown-box mini">{latestReport.markdown}</pre>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function Journal({ sessions, setSessions }) {
   const [draft, setDraft] = useState(createBlankSession);
   const [editingId, setEditingId] = useState(null);
+  const [openPartId, setOpenPartId] = useState(null);
+  const partPickerRef = useRef(null);
+
+  useEffect(() => {
+    if (!openPartId) return undefined;
+
+    function closeOnOutsideClick(event) {
+      if (!partPickerRef.current?.contains(event.target)) {
+        setOpenPartId(null);
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') {
+        setOpenPartId(null);
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [openPartId]);
 
   function updatePart(partId, key, value) {
     setDraft((current) => ({
@@ -856,6 +1124,7 @@ function Journal({ sessions, setSessions }) {
     );
     setEditingId(null);
     setDraft(createBlankSession());
+    setOpenPartId(null);
   }
 
   function editSession(session) {
@@ -865,6 +1134,7 @@ function Journal({ sessions, setSessions }) {
       ...session,
       partScores: { ...createBlankPartScores(), ...(session.partScores || {}) },
     });
+    setOpenPartId(null);
   }
 
   function deleteSession(id) {
@@ -903,25 +1173,68 @@ function Journal({ sessions, setSessions }) {
             </Field>
           </div>
 
-          <div className="part-score-grid">
-            {PARTS.map((part) => (
-              <div key={part.id} className="part-score-row">
-                <strong>{part.id}</strong>
-                <span>{part.skill}</span>
-                <span className="part-score-total">Tổng {part.totalQuestions} câu</span>
-                <select
-                  value={draft.partScores[part.id]?.correct || ''}
-                  onChange={(event) => updatePart(part.id, 'correct', event.target.value)}
-                >
-                  <option value="">Đúng</option>
-                  {Array.from({ length: part.totalQuestions + 1 }, (_, count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
+          <div className="part-score-grid" ref={partPickerRef}>
+            {PARTS.map((part) => {
+              const selectedCorrect = draft.partScores[part.id]?.correct ?? '';
+              const isOpen = openPartId === part.id;
+              const menuId = `correct-menu-${part.id.replace(/\s+/g, '-').toLowerCase()}`;
+              return (
+                <div key={part.id} className={`part-score-row${isOpen ? ' is-menu-open' : ''}`}>
+                  <strong>{part.id}</strong>
+                  <span>{part.skill}</span>
+                  <span className="part-score-total">Tổng {part.totalQuestions} câu</span>
+                  <div className={`part-score-picker${isOpen ? ' open' : ''}`}>
+                    <button
+                      type="button"
+                      className="part-score-trigger"
+                      aria-haspopup="listbox"
+                      aria-expanded={isOpen}
+                      aria-controls={menuId}
+                      onClick={() => setOpenPartId(isOpen ? null : part.id)}
+                    >
+                      <span className={hasInputValue(selectedCorrect) ? '' : 'part-score-placeholder'}>
+                        {hasInputValue(selectedCorrect) ? selectedCorrect : 'Đúng'}
+                      </span>
+                      <ChevronDown size={16} />
+                    </button>
+                    {isOpen && (
+                      <div className="part-score-menu" id={menuId} role="listbox">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={!hasInputValue(selectedCorrect)}
+                          className={`part-score-option${!hasInputValue(selectedCorrect) ? ' selected' : ''}`}
+                          onClick={() => {
+                            updatePart(part.id, 'correct', '');
+                            setOpenPartId(null);
+                          }}
+                        >
+                          Đúng
+                        </button>
+                        {Array.from({ length: part.totalQuestions + 1 }, (_, count) => {
+                          const isSelected = String(selectedCorrect) === String(count);
+                          return (
+                            <button
+                              key={count}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              className={`part-score-option${isSelected ? ' selected' : ''}`}
+                              onClick={() => {
+                                updatePart(part.id, 'correct', String(count));
+                                setOpenPartId(null);
+                              }}
+                            >
+                              {count}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <Field label="Ghi chú">
@@ -1721,7 +2034,7 @@ export default function App() {
         {backend.error && <div className="sync-warning">{backend.error}</div>}
 
         {activeTab === 'overview' && (
-          <Overview
+          <OverviewV2
             sessions={data.sessions}
             mistakes={data.mistakes}
             reports={data.reports}
