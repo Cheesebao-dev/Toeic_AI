@@ -82,6 +82,8 @@ const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã kh�
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
 const PART_BAR_COLOR = '#2563eb';
+const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
+const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng'];
 
 const AUTH_VISUAL_SLIDES = [
   {
@@ -180,6 +182,119 @@ function createBlankMistake() {
 
 function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatInlineMarkdown(text, keyPrefix) {
+  const source = String(text || '');
+  const parts = [];
+  const boldPattern = /\*\*(.+?)\*\*/g;
+  let cursor = 0;
+  let matchIndex = 0;
+  let match = boldPattern.exec(source);
+
+  while (match) {
+    if (match.index > cursor) {
+      parts.push(source.slice(cursor, match.index));
+    }
+    parts.push(<strong key={`${keyPrefix}-strong-${matchIndex}`}>{match[1]}</strong>);
+    cursor = match.index + match[0].length;
+    matchIndex += 1;
+    match = boldPattern.exec(source);
+  }
+
+  if (cursor < source.length) {
+    parts.push(source.slice(cursor));
+  }
+
+  return parts.length ? parts : source;
+}
+
+function MarkdownReport({ markdown, compact = false }) {
+  const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+  const blocks = [];
+  let paragraph = [];
+
+  function pushParagraph() {
+    if (!paragraph.length) return;
+    const text = paragraph.join(' ').trim();
+    if (text) {
+      blocks.push(<p key={`paragraph-${blocks.length}`}>{formatInlineMarkdown(text, `paragraph-${blocks.length}`)}</p>);
+    }
+    paragraph = [];
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index].replace(/\s+$/, '');
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      pushParagraph();
+      continue;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      pushParagraph();
+      const HeadingTag = `h${Math.min(headingMatch[1].length + 2, 5)}`;
+      blocks.push(
+        <HeadingTag key={`heading-${blocks.length}`}>
+          {formatInlineMarkdown(headingMatch[2], `heading-${blocks.length}`)}
+        </HeadingTag>,
+      );
+      continue;
+    }
+
+    if (/^-{3,}$/.test(trimmed)) {
+      pushParagraph();
+      blocks.push(<hr key={`rule-${blocks.length}`} />);
+      continue;
+    }
+
+    const unorderedMatch = rawLine.match(/^(\s*)[-*]\s+(.+)$/);
+    const orderedMatch = rawLine.match(/^(\s*)\d+[.)]\s+(.+)$/);
+    if (unorderedMatch || orderedMatch) {
+      pushParagraph();
+      const isOrdered = Boolean(orderedMatch);
+      const ListTag = isOrdered ? 'ol' : 'ul';
+      const listItems = [];
+
+      for (let listIndex = index; listIndex < lines.length; listIndex += 1) {
+        const itemLine = lines[listIndex].replace(/\s+$/, '');
+        const itemMatch = isOrdered
+          ? itemLine.match(/^(\s*)\d+[.)]\s+(.+)$/)
+          : itemLine.match(/^(\s*)[-*]\s+(.+)$/);
+
+        if (!itemMatch) break;
+
+        listItems.push({
+          indent: Math.min(Math.floor(itemMatch[1].length / 2), 3),
+          text: itemMatch[2].trim(),
+        });
+        index = listIndex;
+      }
+
+      blocks.push(
+        <ListTag key={`list-${blocks.length}`}>
+          {listItems.map((item, itemIndex) => (
+            <li
+              key={`item-${itemIndex}`}
+              className={item.indent ? 'markdown-list-nested' : undefined}
+              style={item.indent ? { '--list-indent': item.indent } : undefined}
+            >
+              {formatInlineMarkdown(item.text, `list-${blocks.length}-${itemIndex}`)}
+            </li>
+          ))}
+        </ListTag>,
+      );
+      continue;
+    }
+
+    paragraph.push(trimmed);
+  }
+
+  pushParagraph();
+
+  return <div className={`markdown-box ${compact ? 'mini' : ''}`}>{blocks}</div>;
 }
 
 function numberValue(value) {
@@ -678,18 +793,27 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-head">
         <button className="sidebar-brand" type="button" onClick={() => setActiveTab('overview')} title="TOEIC Tracker">
-          <span className="brand-mark">T</span>
-          {!collapsed && (
-            <span className="sidebar-brand-copy">
-              <strong>TOEIC Tracker</strong>
-              <span>AI Study OS</span>
-            </span>
-          )}
+          <span className="brand-mark" aria-hidden="true">
+            <svg className="brand-symbol" viewBox="0 0 64 64" focusable="false">
+              <g transform="translate(-2 0)">
+                <circle cx="18" cy="24" r="8" />
+                <path d="M28 14h14v38l-7-3-7 3V14Z" />
+                <path d="M46 14h13v20L46 14Z" />
+              </g>
+            </svg>
+          </span>
+          <span className="sidebar-brand-copy" aria-hidden={collapsed}>
+            <strong>TOEIC Tracker</strong>
+            <span>AI Study OS</span>
+          </span>
         </button>
         <IconButton
           className="sidebar-toggle"
           title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={(event) => {
+            setCollapsed(!collapsed);
+            event.currentTarget.blur();
+          }}
         >
           <Menu size={19} />
         </IconButton>
@@ -697,7 +821,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
 
       <div className="sidebar-scroll">
         <div className="sidebar-section">
-          {!collapsed && <span className="sidebar-section-title">Main menu</span>}
+          <span className="sidebar-section-title" aria-hidden={collapsed}>Main menu</span>
           <nav className="nav-list" aria-label="Điều hướng chính">
             {navItems.map(({ id, label, detail, icon: Icon }) => (
               <button
@@ -707,13 +831,13 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
                 title={label}
                 aria-current={activeTab === id ? 'page' : undefined}
               >
-                <Icon size={19} />
-                {!collapsed && (
-                  <span className="sidebar-link-copy">
-                    <span>{label}</span>
-                    <small>{detail}</small>
-                  </span>
-                )}
+                <span className="sidebar-icon-frame">
+                  <Icon size={19} />
+                </span>
+                <span className="sidebar-link-copy" aria-hidden={collapsed}>
+                  <span>{label}</span>
+                  <small>{detail}</small>
+                </span>
               </button>
             ))}
           </nav>
@@ -721,30 +845,34 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
       </div>
 
       <div className="sidebar-footer">
-        {!collapsed && <span className="sidebar-section-title">Data</span>}
+        <span className="sidebar-section-title" aria-hidden={collapsed}>Data</span>
         <div className="sidebar-tools">
           <button onClick={onExport} title="Xuất dữ liệu">
-            <Download size={18} />
-            {!collapsed && <span>Xuất JSON</span>}
+            <span className="sidebar-icon-frame">
+              <Download size={18} />
+            </span>
+            <span className="sidebar-tool-label" aria-hidden={collapsed}>Xuất JSON</span>
           </button>
           <button onClick={onImportClick} title="Nhập dữ liệu">
-            <Upload size={18} />
-            {!collapsed && <span>Nhập JSON</span>}
+            <span className="sidebar-icon-frame">
+              <Upload size={18} />
+            </span>
+            <span className="sidebar-tool-label" aria-hidden={collapsed}>Nhập JSON</span>
           </button>
           <button className="danger" onClick={onLogout} title="Đăng xuất">
-            <LogOut size={18} />
-            {!collapsed && <span>Đăng xuất</span>}
+            <span className="sidebar-icon-frame">
+              <LogOut size={18} />
+            </span>
+            <span className="sidebar-tool-label" aria-hidden={collapsed}>Đăng xuất</span>
           </button>
         </div>
 
         <div className="sidebar-profile" title={accountLabel}>
           <span className="sidebar-avatar">{avatarLetter}</span>
-          {!collapsed && (
-            <span className="sidebar-profile-copy">
-              <strong>{displayName}</strong>
-              <small>{accountLabel}</small>
-            </span>
-          )}
+          <span className="sidebar-profile-copy" aria-hidden={collapsed}>
+            <strong>{displayName}</strong>
+            <small>{accountLabel}</small>
+          </span>
         </div>
       </div>
     </aside>
@@ -867,7 +995,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
             <h2>Báo cáo mới nhất</h2>
             <span>{latestReport.createdAt}</span>
           </div>
-          <pre className="markdown-box">{latestReport.markdown}</pre>
+          <MarkdownReport markdown={latestReport.markdown} />
         </section>
       )}
     </div>
@@ -1104,7 +1232,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
             </div>
             <button className="overview-chip-button" type="button" onClick={() => setActiveTab('reports')}>Báo cáo</button>
           </div>
-          <pre className="markdown-box mini">{latestReport.markdown}</pre>
+          <MarkdownReport markdown={latestReport.markdown} compact />
         </section>
       )}
     </div>
@@ -1115,20 +1243,23 @@ function Journal({ sessions, setSessions }) {
   const [draft, setDraft] = useState(createBlankSession);
   const [editingId, setEditingId] = useState(null);
   const [openPartId, setOpenPartId] = useState(null);
-  const partPickerRef = useRef(null);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const journalFormRef = useRef(null);
 
   useEffect(() => {
-    if (!openPartId) return undefined;
+    if (!openPartId && !modeMenuOpen) return undefined;
 
     function closeOnOutsideClick(event) {
-      if (!partPickerRef.current?.contains(event.target)) {
+      if (!journalFormRef.current?.contains(event.target)) {
         setOpenPartId(null);
+        setModeMenuOpen(false);
       }
     }
 
     function closeOnEscape(event) {
       if (event.key === 'Escape') {
         setOpenPartId(null);
+        setModeMenuOpen(false);
       }
     }
 
@@ -1138,7 +1269,7 @@ function Journal({ sessions, setSessions }) {
       document.removeEventListener('pointerdown', closeOnOutsideClick);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [openPartId]);
+  }, [openPartId, modeMenuOpen]);
 
   function updatePart(partId, key, value) {
     setDraft((current) => ({
@@ -1165,6 +1296,7 @@ function Journal({ sessions, setSessions }) {
     setEditingId(null);
     setDraft(createBlankSession());
     setOpenPartId(null);
+    setModeMenuOpen(false);
   }
 
   function editSession(session) {
@@ -1175,6 +1307,7 @@ function Journal({ sessions, setSessions }) {
       partScores: { ...createBlankPartScores(), ...(session.partScores || {}) },
     });
     setOpenPartId(null);
+    setModeMenuOpen(false);
   }
 
   function deleteSession(id) {
@@ -1192,7 +1325,7 @@ function Journal({ sessions, setSessions }) {
             </button>
           )}
         </div>
-        <form onSubmit={saveSession} className="stack-form">
+        <form onSubmit={saveSession} className="stack-form" ref={journalFormRef}>
           <div className="form-grid">
             <Field label="Ngày">
               <input type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
@@ -1201,39 +1334,83 @@ function Journal({ sessions, setSessions }) {
               <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="ETS 2024 Test 01" />
             </Field>
             <Field label="Loại buổi">
-              <select value={draft.mode} onChange={(event) => setDraft({ ...draft, mode: event.target.value })}>
-                <option>Full test</option>
-                <option>Listening</option>
-                <option>Reading</option>
-                <option>Part riêng</option>
-              </select>
+              <div className={`session-mode-picker${modeMenuOpen ? ' open' : ''}`}>
+                <button
+                  type="button"
+                  className="session-mode-trigger"
+                  aria-haspopup="listbox"
+                  aria-expanded={modeMenuOpen}
+                  aria-controls="session-mode-menu"
+                  onClick={() => {
+                    setModeMenuOpen((current) => !current);
+                    setOpenPartId(null);
+                  }}
+                >
+                  <span>{draft.mode}</span>
+                  <ChevronDown size={16} />
+                </button>
+                {modeMenuOpen && (
+                  <div className="session-mode-menu" id="session-mode-menu" role="listbox">
+                    {SESSION_MODES.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="option"
+                        aria-selected={draft.mode === mode}
+                        className={`session-mode-option${draft.mode === mode ? ' selected' : ''}`}
+                        onClick={() => {
+                          setDraft({ ...draft, mode });
+                          setModeMenuOpen(false);
+                        }}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Field>
             <Field label="Thời gian">
               <input type="number" min="0" value={draft.durationMinutes} onChange={(event) => setDraft({ ...draft, durationMinutes: event.target.value })} placeholder="120" />
             </Field>
           </div>
 
-          <div className="part-score-grid" ref={partPickerRef}>
+          <div className="part-score-grid">
+            <div className="part-score-header" aria-hidden="true">
+              <span>Part</span>
+              <span>Kỹ năng</span>
+              <span>Tổng câu</span>
+              <span>Số câu đúng</span>
+            </div>
             {PARTS.map((part) => {
               const selectedCorrect = draft.partScores[part.id]?.correct ?? '';
+              const hasSelectedCorrect = hasInputValue(selectedCorrect);
               const isOpen = openPartId === part.id;
               const menuId = `correct-menu-${part.id.replace(/\s+/g, '-').toLowerCase()}`;
               return (
                 <div key={part.id} className={`part-score-row${isOpen ? ' is-menu-open' : ''}`}>
-                  <strong>{part.id}</strong>
-                  <span>{part.skill}</span>
-                  <span className="part-score-total">Tổng {part.totalQuestions} câu</span>
+                  <div className="part-score-part">
+                    <strong>{part.id}</strong>
+                  </div>
+                  <div className="part-score-skill-cell">
+                    <span className={`part-score-skill ${part.skill.toLowerCase()}`}>{part.skill}</span>
+                  </div>
+                  <span className="part-score-total">{part.totalQuestions} câu</span>
                   <div className={`part-score-picker${isOpen ? ' open' : ''}`}>
                     <button
                       type="button"
                       className="part-score-trigger"
+                      aria-label={`Chọn số câu đúng ${part.id}`}
                       aria-haspopup="listbox"
                       aria-expanded={isOpen}
                       aria-controls={menuId}
-                      onClick={() => setOpenPartId(isOpen ? null : part.id)}
+                      onClick={() => {
+                        setOpenPartId(isOpen ? null : part.id);
+                        setModeMenuOpen(false);
+                      }}
                     >
-                      <span className={hasInputValue(selectedCorrect) ? '' : 'part-score-placeholder'}>
-                        {hasInputValue(selectedCorrect) ? selectedCorrect : 'Đúng'}
+                      <span className={hasSelectedCorrect ? 'part-score-value' : 'part-score-placeholder'}>
+                        {hasSelectedCorrect ? String(selectedCorrect) : SCORE_SELECT_PLACEHOLDER}
                       </span>
                       <ChevronDown size={16} />
                     </button>
@@ -1242,14 +1419,14 @@ function Journal({ sessions, setSessions }) {
                         <button
                           type="button"
                           role="option"
-                          aria-selected={!hasInputValue(selectedCorrect)}
-                          className={`part-score-option${!hasInputValue(selectedCorrect) ? ' selected' : ''}`}
+                          aria-selected={!hasSelectedCorrect}
+                          className={`part-score-option${!hasSelectedCorrect ? ' selected' : ''}`}
                           onClick={() => {
                             updatePart(part.id, 'correct', '');
                             setOpenPartId(null);
                           }}
                         >
-                          Đúng
+                          {SCORE_SELECT_PLACEHOLDER}
                         </button>
                         {Array.from({ length: part.totalQuestions + 1 }, (_, count) => {
                           const isSelected = String(selectedCorrect) === String(count);
@@ -1778,7 +1955,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
           </button>
         </div>
         {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-        {reports[0] ? <pre className="markdown-box">{reports[0].markdown}</pre> : <EmptyState title="Chưa có báo cáo" />}
+        {reports[0] ? <MarkdownReport markdown={reports[0].markdown} /> : <EmptyState title="Chưa có báo cáo" />}
       </section>
 
       <section className="panel wide">
@@ -1795,7 +1972,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
                   <Trash2 size={17} />
                 </IconButton>
               </div>
-              <pre className="markdown-box mini">{report.markdown}</pre>
+              <MarkdownReport markdown={report.markdown} compact />
             </article>
           ))}
         </div>
