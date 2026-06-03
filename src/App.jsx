@@ -350,29 +350,9 @@ function AuthGate({ error, onSubmit }) {
 
             <div className="auth-heading">
               <h1>{mode === 'login' ? 'Log in to your Account' : 'Create your Account'}</h1>
-              <p>
-                {mode === 'login'
-                  ? 'Welcome back. Select method to log in:'
-                  : 'Start tracking your TOEIC practice with AI.'}
-              </p>
             </div>
 
             <form onSubmit={submit} className="auth-form">
-              <div className="auth-social-grid first">
-                <button type="button" className="auth-social-button">
-                  <span className="social-mark google">G</span>
-                  Google
-                </button>
-                <button type="button" className="auth-social-button">
-                  <span className="social-mark facebook">f</span>
-                  Facebook
-                </button>
-              </div>
-
-              <div className="auth-divider">
-                <span>or continue with email</span>
-              </div>
-
               {mode === 'register' && (
                 <label className="auth-input-row">
                   <UserRound size={20} />

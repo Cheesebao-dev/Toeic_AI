@@ -596,15 +596,8 @@ button:disabled {
   text-align: left;
 }
 
-.auth-heading p {
-  margin: 0;
-  color: #7c8798;
-  font-size: 13px;
-  line-height: 1.55;
-}
-
 .auth-heading h1 {
-  margin: 0 0 10px;
+  margin: 0;
   color: #10203d;
   font-size: 28px;
   font-weight: 900;
@@ -729,84 +722,6 @@ button:disabled {
   background: #0f56bf;
   border-color: #0f56bf;
   transform: translateY(-1px);
-}
-
-.auth-divider {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 2px 0;
-  min-height: 26px;
-}
-
-.auth-divider::before {
-  position: absolute;
-  content: "";
-  width: 100%;
-  border-top: 1px solid #e5e7eb;
-}
-
-.auth-divider span {
-  position: relative;
-  z-index: 1;
-  padding: 0 14px;
-  color: #9ca3af;
-  background: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-
-.auth-social-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.auth-social-grid.first {
-  margin-bottom: 8px;
-}
-
-.auth-social-button {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #4b5563;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 800;
-  transition: background 160ms ease, border-color 160ms ease;
-}
-
-.auth-social-button:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.social-mark {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  font-size: 17px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.social-mark.google {
-  color: #4285f4;
-}
-
-.social-mark.facebook {
-  color: #1877f2;
-  font-family: Arial, sans-serif;
-  font-size: 22px;
 }
 
 .auth-switch-row {
