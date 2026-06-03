@@ -443,7 +443,7 @@ function AuthGate({ error, onSubmit }) {
           <div className="connect-illustration">
             <div className="connect-orb"></div>
             <svg className="connector-path" viewBox="0 0 430 360" focusable="false">
-              <path d="M106 94 H166 V302 H116 M74 200 H270" />
+              <path d="M106 94 H166 V302 H106 M74 200 H270" />
             </svg>
             <div className="connector-node node-ai">
               <span className="node-ai-mark">AI</span>
