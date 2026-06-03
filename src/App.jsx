@@ -84,6 +84,7 @@ const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea
 const PART_BAR_COLOR = '#2563eb';
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
 const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng'];
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
 const AUTH_VISUAL_SLIDES = [
   {
@@ -546,6 +547,14 @@ function loadState(userId) {
 function saveLocalState(userId, state) {
   if (!userId) return;
   localStorage.setItem(stateKey(userId), JSON.stringify(state));
+}
+
+function apiUrl(path) {
+  return `${API_BASE_URL}${path}`;
+}
+
+function apiFetch(path, options) {
+  return fetch(apiUrl(path), options);
 }
 
 async function readJsonResponse(response) {
@@ -1869,7 +1878,7 @@ function AIAnalyzer({ onSaveMistake }) {
       payload.append('userAnswer', form.userAnswer);
       payload.append('questionText', form.questionText);
       if (file) payload.append('file', file);
-      const response = await fetch('/api/ai/analyze', {
+      const response = await apiFetch('/api/ai/analyze', {
         method: 'POST',
         credentials: 'include',
         body: payload,
@@ -2018,7 +2027,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
     setError('');
     setWritingReportId(null);
     try {
-      const response = await fetch('/api/ai/report', {
+      const response = await apiFetch('/api/ai/report', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2144,7 +2153,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
           })),
       };
 
-      const response = await fetch('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2278,7 +2287,7 @@ export default function App() {
     const timer = window.setTimeout(async () => {
       setBackend((current) => ({ ...current, saving: true, error: '' }));
       try {
-        const response = await fetch('/api/data', {
+        const response = await apiFetch('/api/data', {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -2305,7 +2314,7 @@ export default function App() {
 
     async function boot() {
       try {
-        const healthResponse = await fetch('/api/health');
+        const healthResponse = await apiFetch('/api/health');
         const health = await readJsonResponse(healthResponse);
 
         if (cancelled) return;
@@ -2317,7 +2326,7 @@ export default function App() {
           hasGeminiKey: Boolean(health.hasGeminiKey),
         }));
 
-        const meResponse = await fetch('/api/auth/me', { credentials: 'include' });
+        const meResponse = await apiFetch('/api/auth/me', { credentials: 'include' });
         const mePayload = await readJsonResponse(meResponse).catch((error) => ({ error: error.message }));
 
         if (cancelled) return;
@@ -2351,7 +2360,7 @@ export default function App() {
   }, []);
 
   async function fetchBackendData(user, storage = backend.storage) {
-    const response = await fetch('/api/data', { credentials: 'include' });
+    const response = await apiFetch('/api/data', { credentials: 'include' });
     const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
     if (response.status === 401) {
       setAuth({ checked: true, user: null, error: 'Vui lòng đăng nhập lại.', loading: false });
@@ -2382,7 +2391,7 @@ export default function App() {
     });
 
     if (nextState === cachedState) {
-      await fetch('/api/data', {
+      await apiFetch('/api/data', {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2442,7 +2451,7 @@ export default function App() {
   async function handleAuthSubmit(mode, form) {
     setAuth((current) => ({ ...current, loading: true, error: '' }));
     try {
-      const response = await fetch(`/api/auth/${mode === 'register' ? 'register' : 'login'}`, {
+      const response = await apiFetch(`/api/auth/${mode === 'register' ? 'register' : 'login'}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2459,7 +2468,7 @@ export default function App() {
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    await apiFetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     setAuth({ checked: true, user: null, error: '', loading: false });
     setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
     setData({ ...EMPTY_STATE });

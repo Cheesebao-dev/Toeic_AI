@@ -31,10 +31,22 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || process.env.APP_PASSWORD || 'local-dev-secret-change-me';
 const AUTH_COOKIE = 'toeic_auth';
+const LOCAL_FRONTEND_ORIGINS = ['http://127.0.0.1:5173', 'http://localhost:5173'];
+const CONFIGURED_FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const ALLOWED_FRONTEND_ORIGINS = new Set([...LOCAL_FRONTEND_ORIGINS, ...CONFIGURED_FRONTEND_ORIGINS]);
 
 app.use(
   cors({
-    origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+    origin(origin, callback) {
+      if (!origin || ALLOWED_FRONTEND_ORIGINS.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     credentials: true,
   }),
 );
@@ -46,10 +58,11 @@ function isValidEmail(email) {
 }
 
 function cookieOptions() {
+  const crossSiteCookie = process.env.NODE_ENV === 'production' || CONFIGURED_FRONTEND_ORIGINS.length > 0;
   return {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: crossSiteCookie ? 'none' : 'lax',
+    secure: crossSiteCookie,
     maxAge: 30 * 24 * 60 * 60 * 1000,
     path: '/',
   };

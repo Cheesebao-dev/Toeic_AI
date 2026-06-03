@@ -30,6 +30,8 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=postgresql://user:password@host:5432/database
 JWT_SECRET=change_this_to_a_long_random_secret
+FRONTEND_ORIGIN=https://your-frontend-domain.example
+VITE_API_BASE_URL=https://your-backend-domain.example
 ```
 
 Không đưa `.env` lên Git. Frontend không đọc trực tiếp API key; mọi request AI đi qua backend Express.
@@ -72,6 +74,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=your_postgres_connection_string
 JWT_SECRET=your_long_random_session_secret
+FRONTEND_ORIGIN=https://your-frontend-domain.example
 ```
 
 Database nên dùng Supabase hoặc Neon Postgres free tier cho nhu cầu cá nhân.
