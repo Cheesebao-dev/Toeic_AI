@@ -48,13 +48,13 @@ const STORAGE_KEY = 'toeic-tracker-ai-state-v1';
 const EMPTY_STATE = { sessions: [], mistakes: [], reports: [] };
 
 const PARTS = [
-  { id: 'Part 1', skill: 'Listening' },
-  { id: 'Part 2', skill: 'Listening' },
-  { id: 'Part 3', skill: 'Listening' },
-  { id: 'Part 4', skill: 'Listening' },
-  { id: 'Part 5', skill: 'Reading' },
-  { id: 'Part 6', skill: 'Reading' },
-  { id: 'Part 7', skill: 'Reading' },
+  { id: 'Part 1', skill: 'Listening', totalQuestions: 6 },
+  { id: 'Part 2', skill: 'Listening', totalQuestions: 25 },
+  { id: 'Part 3', skill: 'Listening', totalQuestions: 39 },
+  { id: 'Part 4', skill: 'Listening', totalQuestions: 30 },
+  { id: 'Part 5', skill: 'Reading', totalQuestions: 30 },
+  { id: 'Part 6', skill: 'Reading', totalQuestions: 16 },
+  { id: 'Part 7', skill: 'Reading', totalQuestions: 54 },
 ];
 
 const MISTAKE_TYPES = [
@@ -77,7 +77,7 @@ const MISTAKE_TYPES = [
 
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
-const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#14b8a6', '#111827'];
+const PIE_COLORS = ['#df4d8d', '#22a783', '#d78b18', '#dc4c6f', '#7b6ff1', '#4aa6d9', '#5b4a63'];
 
 const AUTH_VISUAL_SLIDES = [
   {
@@ -132,7 +132,7 @@ function today() {
 
 function createBlankPartScores() {
   return PARTS.reduce((acc, part) => {
-    acc[part.id] = { correct: '', total: '' };
+    acc[part.id] = { correct: '' };
     return acc;
   }, {});
 }
@@ -183,6 +183,18 @@ function numberValue(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+function hasInputValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function isPartAttempted(row) {
+  return hasInputValue(row?.correct) || numberValue(row?.total) > 0;
+}
+
+function fixedPartTotal(row, part) {
+  return isPartAttempted(row) ? part.totalQuestions : 0;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -218,8 +230,9 @@ function sumPartScores(partScores, skill) {
   return PARTS.filter((part) => part.skill === skill).reduce(
     (acc, part) => {
       const row = partScores?.[part.id] || {};
-      acc.correct += numberValue(row.correct);
-      acc.total += numberValue(row.total);
+      const total = fixedPartTotal(row, part);
+      acc.correct += clamp(numberValue(row.correct), 0, total);
+      acc.total += total;
       return acc;
     },
     { correct: 0, total: 0 },
@@ -257,8 +270,9 @@ function calculateStats(sessions, mistakes) {
       if (calc.totalScore) acc.latestScore = calc.totalScore;
       PARTS.forEach((part) => {
         const row = session.partScores?.[part.id] || {};
-        acc.parts[part.id].correct += numberValue(row.correct);
-        acc.parts[part.id].total += numberValue(row.total);
+        const total = fixedPartTotal(row, part);
+        acc.parts[part.id].correct += clamp(numberValue(row.correct), 0, total);
+        acc.parts[part.id].total += total;
       });
       return acc;
     },
@@ -745,13 +759,13 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
           <div className="chart-box">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={scoreHistory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
                 <XAxis dataKey="date" />
                 <YAxis yAxisId="left" domain={[0, 990]} />
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
                 <Tooltip />
-                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#df4d8d" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#22a783" strokeWidth={3} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -768,11 +782,11 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
         <div className="chart-box">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={stats.partAccuracy}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
               <XAxis dataKey="part" />
               <YAxis domain={[0, 100]} />
               <Tooltip />
-              <Bar dataKey="accuracy" fill="#2563eb" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="accuracy" fill="#df4d8d" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -894,20 +908,18 @@ function Journal({ sessions, setSessions }) {
               <div key={part.id} className="part-score-row">
                 <strong>{part.id}</strong>
                 <span>{part.skill}</span>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Đúng"
+                <span className="part-score-total">Tổng {part.totalQuestions} câu</span>
+                <select
                   value={draft.partScores[part.id]?.correct || ''}
                   onChange={(event) => updatePart(part.id, 'correct', event.target.value)}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Tổng"
-                  value={draft.partScores[part.id]?.total || ''}
-                  onChange={(event) => updatePart(part.id, 'total', event.target.value)}
-                />
+                >
+                  <option value="">Đúng</option>
+                  {Array.from({ length: part.totalQuestions + 1 }, (_, count) => (
+                    <option key={count} value={count}>
+                      {count}
+                    </option>
+                  ))}
+                </select>
               </div>
             ))}
           </div>
