@@ -445,19 +445,14 @@ function AuthGate({ error, onSubmit }) {
             <svg className="connector-path" viewBox="0 0 430 360" focusable="false">
               <path d="M106 94 H166 V302 H116 M74 200 H270" />
             </svg>
-            <div className="connector-node node-integrations">
-              <span className="node-grid-mark">
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-              </span>
+            <div className="connector-node node-ai">
+              <span className="node-ai-mark">AI</span>
             </div>
             <div className="connector-node node-toeic">
               <span className="node-app-mark">T</span>
             </div>
             <div className="connector-node node-score">
-              <span className="node-google-mark">G</span>
+              <span className="node-score-mark">990</span>
             </div>
             <div className="dashboard-card">
               <div className="dash-top">

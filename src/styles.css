@@ -919,9 +919,10 @@ button:disabled {
     inset 0 0 0 1px rgba(37, 99, 235, 0.08);
 }
 
-.node-integrations {
+.node-ai {
   left: 72px;
   top: 60px;
+  color: #0f766e;
 }
 
 .node-toeic {
@@ -932,9 +933,10 @@ button:disabled {
 .node-score {
   left: 82px;
   top: 268px;
-  color: #4285f4;
+  color: #0f56bf;
 }
 
+.node-ai-mark,
 .node-app-mark {
   display: grid;
   width: 30px;
@@ -947,39 +949,17 @@ button:disabled {
   font-weight: 900;
 }
 
-.node-google-mark {
-  font-size: 27px;
-  font-weight: 900;
-  color: #4285f4;
+.node-ai-mark {
+  color: #0f766e;
+  background: #ecfeff;
+  font-size: 15px;
 }
 
-.node-grid-mark {
-  display: grid;
-  grid-template-columns: repeat(2, 10px);
-  gap: 4px;
-}
-
-.node-grid-mark i {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 4px;
-}
-
-.node-grid-mark i:nth-child(1) {
-  background: #ef4444;
-}
-
-.node-grid-mark i:nth-child(2) {
-  background: #f59e0b;
-}
-
-.node-grid-mark i:nth-child(3) {
-  background: #22c55e;
-}
-
-.node-grid-mark i:nth-child(4) {
-  background: #3b82f6;
+.node-score-mark {
+  color: #1262d6;
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: 0;
 }
 
 .dashboard-card {
