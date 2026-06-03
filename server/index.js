@@ -84,28 +84,31 @@ function clearAuthCookie(res) {
 }
 
 async function requireAuth(req, res, next) {
-  try {
-    const bearerToken = String(req.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1];
-    const token = req.cookies?.[AUTH_COOKIE] || bearerToken;
-    if (!token) {
-      res.status(401).json({ error: 'Authentication required.' });
-      return;
-    }
+  const bearerToken = String(req.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1];
+  const cookieToken = req.cookies?.[AUTH_COOKIE];
+  const tokens = [bearerToken, cookieToken].filter(Boolean);
 
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = await findUserById(payload.sub);
-    if (!user) {
-      clearAuthCookie(res);
-      res.status(401).json({ error: 'User not found.' });
-      return;
-    }
-
-    req.user = user;
-    next();
-  } catch {
-    clearAuthCookie(res);
-    res.status(401).json({ error: 'Invalid session.' });
+  if (!tokens.length) {
+    res.status(401).json({ error: 'Authentication required.' });
+    return;
   }
+
+  for (const token of tokens) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      const user = await findUserById(payload.sub);
+      if (user) {
+        req.user = user;
+        next();
+        return;
+      }
+    } catch {
+      // Try the next available auth source. A stale cookie must not block a valid bearer token.
+    }
+  }
+
+  clearAuthCookie(res);
+  res.status(401).json({ error: 'Invalid session.' });
 }
 
 function extractGeminiText(payload) {
@@ -336,7 +339,8 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
-  res.json({ user: getPublicUser(req.user) });
+  const token = setAuthCookie(res, req.user);
+  res.json({ user: getPublicUser(req.user), token });
 });
 
 app.post('/api/auth/logout', (_req, res) => {

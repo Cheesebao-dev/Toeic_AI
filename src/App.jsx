@@ -569,11 +569,19 @@ function getStoredAuthToken() {
 
 function storeAuthToken(token) {
   if (!token) return;
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  try {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch {
+    // Auth still works through cookies when localStorage is unavailable.
+  }
 }
 
 function clearStoredAuthToken() {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
 }
 
 function apiUrl(path, baseUrl = API_BASE_URL) {
@@ -617,6 +625,15 @@ async function readJsonResponse(response) {
     error.responseText = text;
     throw error;
   }
+}
+
+async function refreshAuthSession() {
+  const response = await apiFetch('/api/auth/me', { credentials: 'include' });
+  const payload = await readJsonResponse(response).catch(() => ({}));
+  if (!response.ok || !payload.user) return null;
+
+  storeAuthToken(payload.token);
+  return payload.user;
 }
 function isStateEmpty(state) {
   return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length;
@@ -2133,7 +2150,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
   );
 }
 
-function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = true }) {
+function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = true, onAuthExpired }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2183,7 +2200,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
           })),
       };
 
-      const response = await apiFetch('/api/ai/chat', {
+      const chatRequest = {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2192,10 +2209,16 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
           history: nextMessages.slice(-8),
           context,
         }),
-      });
-      const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
+      };
+      let response = await apiFetch('/api/ai/chat', chatRequest);
+      let payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
+      if (response.status === 401 && await refreshAuthSession()) {
+        response = await apiFetch('/api/ai/chat', chatRequest);
+        payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
+      }
       if (response.status === 401) {
         clearStoredAuthToken();
+        onAuthExpired?.();
         throw new Error('Bạn cần đăng nhập lại để dùng trợ lý AI.');
       }
       if (!response.ok) throw new Error(payload.error || `Không gửi được câu hỏi. HTTP ${response.status}`);
@@ -2373,6 +2396,7 @@ export default function App() {
           return;
         }
 
+        storeAuthToken(mePayload.token);
         setAuth({ checked: true, user: mePayload.user, error: '', loading: false });
         await fetchBackendData(mePayload.user, health.storage || 'backend');
       } catch (error) {
@@ -2418,14 +2442,14 @@ export default function App() {
 
     setData(nextState);
     saveLocalState(user.id, nextState);
-    setBackend({
+    setBackend((current) => ({
+      ...current,
       checked: true,
       syncEnabled: true,
       saving: false,
       storage,
-      hasGeminiKey: backend.hasGeminiKey,
       error: '',
-    });
+    }));
 
     if (nextState === cachedState) {
       await apiFetch('/api/data', {
@@ -2574,6 +2598,10 @@ export default function App() {
         mistakes={data.mistakes}
         activeTab={activeTab}
         hasGeminiKey={backend.hasGeminiKey}
+        onAuthExpired={() => {
+          setAuth({ checked: true, user: null, error: 'B\u1ea1n c\u1ea7n \u0111\u0103ng nh\u1eadp l\u1ea1i \u0111\u1ec3 d\u00f9ng tr\u1ee3 l\u00fd AI.', loading: false });
+          setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
+        }}
       />
     </div>
   );
