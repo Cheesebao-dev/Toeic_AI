@@ -5924,6 +5924,16 @@ textarea:focus,
     min-width: 0;
     overflow-x: hidden;
   }
+
+  .page-grid,
+  .two-column,
+  .overview-v2,
+  .report-history-page {
+    width: 100%;
+    max-width: 1680px;
+    margin-right: 0;
+    margin-left: 0;
+  }
 }
 
 @media (min-width: 901px) and (max-width: 1440px), (min-width: 901px) and (max-height: 820px) {
