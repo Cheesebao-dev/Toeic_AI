@@ -876,6 +876,7 @@ button:disabled {
   background: #ffffff;
   border-radius: 9px;
   box-shadow: 0 22px 42px rgba(0, 36, 102, 0.23);
+  animation: auth-visual-fade 420ms ease;
 }
 
 .dash-top {
@@ -910,11 +911,16 @@ button:disabled {
 }
 
 .dash-top strong {
-  display: block;
-  width: 68px;
-  height: 6px;
-  background: #e5e7eb;
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 0 8px;
+  color: #2563eb;
+  background: #eff6ff;
   border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .dash-filter-row {
@@ -925,24 +931,20 @@ button:disabled {
 }
 
 .dash-filter-row span {
-  height: 16px;
+  display: inline-flex;
+  min-width: 0;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  color: #475569;
   background: #eef2f7;
   border-radius: 4px;
-}
-
-.dash-filter-row span:first-child {
-  position: relative;
-}
-
-.dash-filter-row span:first-child::after {
-  position: absolute;
-  content: "";
-  left: 14px;
-  top: 6px;
-  width: 48px;
-  height: 5px;
-  background: #aeb9c8;
-  border-radius: 999px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dash-row {
@@ -989,22 +991,35 @@ button:disabled {
 .dash-row div {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 .dash-row span {
   display: block;
-  width: 96px;
-  height: 7px;
-  background: #9daabc;
-  border-radius: 999px;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  color: #1f2937;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dash-row small {
   display: block;
-  width: 132px;
-  height: 5px;
-  background: #d8e0ec;
-  border-radius: 999px;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  color: #94a3b8;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .visual-copy {
@@ -1014,6 +1029,7 @@ button:disabled {
   margin-top: 14px;
   color: #ffffff;
   text-align: center;
+  animation: auth-visual-fade 420ms ease;
 }
 
 .visual-copy h2 {
@@ -1043,8 +1059,20 @@ button:disabled {
   border-radius: 50%;
 }
 
-.visual-dots span:first-child {
+.visual-dots span.active {
   background: #ffffff;
+}
+
+@keyframes auth-visual-fade {
+  from {
+    opacity: 0.72;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-grid,

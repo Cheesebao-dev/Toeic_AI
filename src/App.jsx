@@ -79,6 +79,48 @@ const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã kh�
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#14b8a6', '#111827'];
 
+const AUTH_VISUAL_SLIDES = [
+  {
+    id: 'practice',
+    nodes: { top: 'AI', middle: 'T', bottom: '990' },
+    panelTitle: 'Practice',
+    filters: ['Full test', 'Today'],
+    rows: [
+      { avatar: 'avatar-one', label: 'Full TOEIC test', detail: 'Listening + Reading' },
+      { avatar: 'avatar-two', label: 'Part accuracy', detail: 'P5 34/40, P7 42/54' },
+      { avatar: 'avatar-three', label: 'Study note', detail: 'Review vocabulary traps' },
+    ],
+    title: 'Connect every TOEIC practice.',
+    description: 'Track tests, mistakes, AI feedback, and progress in one focused dashboard.',
+  },
+  {
+    id: 'mistakes',
+    nodes: { top: 'AI', middle: 'P5', bottom: 'Fix' },
+    panelTitle: 'Mistakes',
+    filters: ['Part 5', 'Review'],
+    rows: [
+      { avatar: 'avatar-one', label: 'Wrong answer', detail: 'Grammar and collocation' },
+      { avatar: 'avatar-two', label: 'AI explanation', detail: 'Meaning, trap, correction' },
+      { avatar: 'avatar-three', label: 'Review status', detail: 'Needs one more repeat' },
+    ],
+    title: 'Turn mistakes into review tasks.',
+    description: 'Save explanations, translations, wrong-answer reasons, and next actions.',
+  },
+  {
+    id: 'progress',
+    nodes: { top: 'L/R', middle: 'T', bottom: '990' },
+    panelTitle: 'Progress',
+    filters: ['Score', 'Trend'],
+    rows: [
+      { avatar: 'avatar-one', label: 'Latest estimate', detail: '720 toward 990' },
+      { avatar: 'avatar-two', label: 'Weakest part', detail: 'Part 7 detail reading' },
+      { avatar: 'avatar-three', label: 'Accuracy trend', detail: '84% this week' },
+    ],
+    title: 'Follow progress toward 990.',
+    description: 'Compare scores, accuracy, weak parts, and study minutes after each test.',
+  },
+];
+
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -332,6 +374,16 @@ function AuthGate({ error, onSubmit }) {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [visualIndex, setVisualIndex] = useState(0);
+  const visualSlide = AUTH_VISUAL_SLIDES[visualIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setVisualIndex((current) => (current + 1) % AUTH_VISUAL_SLIDES.length);
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   function submit(event) {
     event.preventDefault();
@@ -429,57 +481,46 @@ function AuthGate({ error, onSubmit }) {
               <path d="M106 94 H166 V302 H106 M74 200 H270" />
             </svg>
             <div className="connector-node node-ai">
-              <span className="node-ai-mark">AI</span>
+              <span className="node-ai-mark">{visualSlide.nodes.top}</span>
             </div>
             <div className="connector-node node-toeic">
-              <span className="node-app-mark">T</span>
+              <span className="node-app-mark">{visualSlide.nodes.middle}</span>
             </div>
             <div className="connector-node node-score">
-              <span className="node-score-mark">990</span>
+              <span className="node-score-mark">{visualSlide.nodes.bottom}</span>
             </div>
-            <div className="dashboard-card">
+            <div className="dashboard-card" key={visualSlide.id}>
               <div className="dash-top">
                 <div>
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
-                <strong></strong>
+                <strong>{visualSlide.panelTitle}</strong>
               </div>
               <div className="dash-filter-row">
-                <span></span>
-                <span></span>
+                {visualSlide.filters.map((filter) => (
+                  <span key={filter}>{filter}</span>
+                ))}
               </div>
-              <div className="dash-row">
-                <strong className="avatar-one"></strong>
-                <div>
-                  <span></span>
-                  <small></small>
+              {visualSlide.rows.map((row) => (
+                <div className="dash-row" key={row.label}>
+                  <strong className={row.avatar}></strong>
+                  <div>
+                    <span>{row.label}</span>
+                    <small>{row.detail}</small>
+                  </div>
                 </div>
-              </div>
-              <div className="dash-row">
-                <strong className="avatar-two"></strong>
-                <div>
-                  <span></span>
-                  <small></small>
-                </div>
-              </div>
-              <div className="dash-row">
-                <strong className="avatar-three"></strong>
-                <div>
-                  <span></span>
-                  <small></small>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-          <div className="visual-copy">
-            <h2>Connect every TOEIC practice.</h2>
-            <p>Track tests, mistakes, AI feedback, and progress in one focused dashboard.</p>
+          <div className="visual-copy" key={`${visualSlide.id}-copy`}>
+            <h2>{visualSlide.title}</h2>
+            <p>{visualSlide.description}</p>
             <div className="visual-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+              {AUTH_VISUAL_SLIDES.map((slide, index) => (
+                <span className={index === visualIndex ? 'active' : ''} key={slide.id}></span>
+              ))}
             </div>
           </div>
         </section>
