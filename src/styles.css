@@ -871,38 +871,60 @@ button:disabled {
   z-index: 1;
   width: 430px;
   height: 360px;
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .connect-orb {
   position: absolute;
-  left: 86px;
-  top: 118px;
-  width: 174px;
-  height: 174px;
-  border: 24px solid rgba(147, 197, 253, 0.24);
-  border-radius: 34px;
+  left: 70px;
+  top: 58px;
+  width: 250px;
+  height: 250px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
 }
 
 .connector-line {
   position: absolute;
   z-index: 1;
-  background: rgba(147, 197, 253, 0.34);
+  background: rgba(147, 197, 253, 0.36);
   border-radius: 999px;
+  box-shadow: 0 0 28px rgba(147, 197, 253, 0.08);
 }
 
 .line-a {
-  left: 54px;
-  top: 198px;
-  width: 236px;
-  height: 22px;
+  left: 74px;
+  top: 188px;
+  width: 196px;
+  height: 24px;
 }
 
 .line-b {
-  left: 167px;
-  top: 110px;
-  width: 22px;
-  height: 210px;
+  left: 154px;
+  top: 94px;
+  width: 24px;
+  height: 220px;
+}
+
+.line-b::before,
+.line-b::after {
+  position: absolute;
+  content: "";
+  height: 24px;
+  background: inherit;
+  border-radius: inherit;
+}
+
+.line-b::before {
+  left: -48px;
+  top: 0;
+  width: 58px;
+}
+
+.line-b::after {
+  left: -38px;
+  bottom: 0;
+  width: 48px;
 }
 
 .connector-node {
@@ -923,19 +945,19 @@ button:disabled {
     inset 0 0 0 1px rgba(37, 99, 235, 0.08);
 }
 
-.node-ai {
-  left: 36px;
-  top: 162px;
+.node-integrations {
+  left: 72px;
+  top: 60px;
 }
 
 .node-toeic {
-  left: 82px;
-  top: 70px;
+  left: 40px;
+  top: 166px;
 }
 
 .node-score {
-  left: 92px;
-  top: 270px;
+  left: 82px;
+  top: 268px;
   color: #4285f4;
 }
 
@@ -944,8 +966,8 @@ button:disabled {
   width: 30px;
   height: 30px;
   place-items: center;
-  color: #1262d6;
-  background: #eff6ff;
+  color: #ffffff;
+  background: #1262d6;
   border-radius: 8px;
   font-size: 18px;
   font-weight: 900;

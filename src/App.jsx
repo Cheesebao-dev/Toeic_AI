@@ -444,7 +444,7 @@ function AuthGate({ error, onSubmit }) {
             <div className="connect-orb"></div>
             <div className="connector-line line-a"></div>
             <div className="connector-line line-b"></div>
-            <div className="connector-node node-ai">
+            <div className="connector-node node-integrations">
               <span className="node-grid-mark">
                 <i></i>
                 <i></i>
