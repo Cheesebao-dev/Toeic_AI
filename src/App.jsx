@@ -2162,19 +2162,6 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
     setLoading(true);
 
     try {
-      if (!hasGeminiKey) {
-        setMessages((current) => [
-          ...current,
-          {
-            id: uid(),
-            role: 'assistant',
-            content: 'AI chat chưa hoạt động vì server chưa cấu hình GEMINI_API_KEY. Bạn cần thêm key này trên môi trường deploy rồi thử lại.',
-            animated: true,
-          },
-        ]);
-        return;
-      }
-
       const context = {
         activeTab,
         stats,
