@@ -82,6 +82,7 @@ const MISTAKE_TYPES = [
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
+const PART_BAR_COLOR = '#2563eb';
 
 const AUTH_VISUAL_SLIDES = [
   {
@@ -790,7 +791,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
               <XAxis dataKey="part" />
               <YAxis domain={[0, 100]} />
               <Tooltip />
-              <Bar dataKey="accuracy" fill="#2563eb" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="accuracy" fill={PART_BAR_COLOR} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -940,11 +941,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
                   <XAxis dataKey="part" />
                   <YAxis domain={[0, 100]} />
                   <Tooltip />
-                  <Bar dataKey="accuracy" radius={[10, 10, 4, 4]}>
-                    {stats.partAccuracy.map((entry, index) => (
-                      <Cell key={entry.part} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="accuracy" fill={PART_BAR_COLOR} radius={[10, 10, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
