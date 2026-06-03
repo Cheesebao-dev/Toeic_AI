@@ -13,10 +13,13 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "bcryptjs": "^3.0.3",
     "concurrently": "latest",
+    "cookie-parser": "^1.4.7",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "latest",
     "multer": "latest",
     "pg": "latest",

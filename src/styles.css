@@ -206,6 +206,34 @@ button:disabled {
   border-color: #a7f3d0 !important;
 }
 
+.user-pill {
+  color: #1d4ed8 !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-logout {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.topbar-logout:hover {
+  background: #fee2e2;
+}
+
 .sync-warning {
   max-width: 1440px;
   margin: -8px auto 16px;
@@ -250,6 +278,32 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+}
+
+.auth-tabs button {
+  min-height: 38px;
+  color: #475569;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 800;
+}
+
+.auth-tabs button.active {
+  color: #1d4ed8;
+  background: white;
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
 
 .page-grid,

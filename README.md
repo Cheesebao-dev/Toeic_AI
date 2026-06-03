@@ -29,7 +29,7 @@ Tạo file `.env` ở thư mục gốc:
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=postgresql://user:password@host:5432/database
-APP_PASSWORD=change_this_password
+JWT_SECRET=change_this_to_a_long_random_secret
 ```
 
 Không đưa `.env` lên Git. Frontend không đọc trực tiếp API key; mọi request AI đi qua backend Express.
@@ -42,10 +42,12 @@ App đồng bộ dữ liệu qua backend endpoint `/api/data`.
 - Nếu chưa có `DATABASE_URL`, backend lưu tạm vào file `data/app-state.json` khi chạy local.
 - Khi deploy cloud, nên dùng Postgres thật như Supabase hoặc Neon. Không nên dựa vào file local trên Render Free vì filesystem có thể mất khi redeploy/restart.
 
-Với app cá nhân, nên đặt `APP_PASSWORD` trên môi trường deploy để người khác không đọc/sửa dữ liệu hoặc dùng quota Gemini của bạn.
+App dùng đăng nhập email/password. Khi deploy public, bắt buộc đặt `JWT_SECRET` đủ dài để bảo vệ session đăng nhập.
 
 ## Tính năng
 
+- Đăng ký, đăng nhập, đăng xuất bằng email/password.
+- Mỗi tài khoản có dữ liệu nhật ký, lỗi sai và báo cáo riêng.
 - Dashboard tổng quan điểm ước tính, accuracy, lỗi chưa khắc phục.
 - Nhật ký luyện đề theo Part 1-7.
 - Sổ tay lỗi sai có lọc theo Part, loại lỗi, trạng thái.
@@ -69,7 +71,7 @@ Environment Variables:
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=your_postgres_connection_string
-APP_PASSWORD=your_private_app_password
+JWT_SECRET=your_long_random_session_secret
 ```
 
 Database nên dùng Supabase hoặc Neon Postgres free tier cho nhu cầu cá nhân.
@@ -78,6 +80,10 @@ Database nên dùng Supabase hoặc Neon Postgres free tier cho nhu cầu cá nh
 
 ```text
 GET /api/health
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+POST /api/auth/logout
 GET /api/data
 PUT /api/data
 POST /api/ai/analyze

@@ -1,10 +1,22 @@
 import 'dotenv/config';
+import bcrypt from 'bcryptjs';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import multer from 'multer';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getStorageMode, readState, writeState } from './storage.js';
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  getPublicUser,
+  getStorageMode,
+  readState,
+  writeState,
+} from './storage.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,23 +29,63 @@ const upload = multer({
 const PORT = Number(process.env.PORT || 8787);
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const APP_PASSWORD = process.env.APP_PASSWORD || '';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.APP_PASSWORD || 'local-dev-secret-change-me';
+const AUTH_COOKIE = 'toeic_auth';
 
-app.use(cors({ origin: ['http://127.0.0.1:5173', 'http://localhost:5173'] }));
+app.use(
+  cors({
+    origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: '2mb' }));
+app.use(cookieParser());
 
-function requireAppAccess(req, res, next) {
-  if (!APP_PASSWORD) {
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: '/',
+  };
+}
+
+function setAuthCookie(res, user) {
+  const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: '30d' });
+  res.cookie(AUTH_COOKIE, token, cookieOptions());
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie(AUTH_COOKIE, { ...cookieOptions(), maxAge: 0 });
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const token = req.cookies?.[AUTH_COOKIE];
+    if (!token) {
+      res.status(401).json({ error: 'Authentication required.' });
+      return;
+    }
+
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = await findUserById(payload.sub);
+    if (!user) {
+      clearAuthCookie(res);
+      res.status(401).json({ error: 'User not found.' });
+      return;
+    }
+
+    req.user = user;
     next();
-    return;
+  } catch {
+    clearAuthCookie(res);
+    res.status(401).json({ error: 'Invalid session.' });
   }
-
-  if (req.get('x-app-password') === APP_PASSWORD) {
-    next();
-    return;
-  }
-
-  res.status(401).json({ error: 'App password required.' });
 }
 
 function extractGeminiText(payload) {
@@ -127,28 +179,95 @@ app.get('/api/health', (_req, res) => {
     ok: true,
     model: MODEL,
     hasGeminiKey: Boolean(GEMINI_API_KEY),
-    requiresPassword: Boolean(APP_PASSWORD),
+    auth: 'email-password',
     storage: getStorageMode(),
   });
 });
 
-app.get('/api/data', requireAppAccess, async (_req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
-    res.json(await readState());
+    const { name, email, password } = req.body || {};
+    if (!isValidEmail(email)) {
+      res.status(400).json({ error: 'Email không hợp lệ.' });
+      return;
+    }
+    if (String(password || '').length < 6) {
+      res.status(400).json({ error: 'Mật khẩu cần ít nhất 6 ký tự.' });
+      return;
+    }
+
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      res.status(409).json({ error: 'Email này đã có tài khoản.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await createUser({
+      id: randomUUID(),
+      name,
+      email,
+      passwordHash,
+    });
+    setAuthCookie(res, user);
+    res.status(201).json({ user: getPublicUser(user) });
+  } catch (error) {
+    if (error.code === '23505' || error.code === 'duplicate_email') {
+      res.status(409).json({ error: 'Email này đã có tài khoản.' });
+      return;
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    const user = await findUserByEmail(email);
+    if (!user) {
+      res.status(401).json({ error: 'Email hoặc mật khẩu không đúng.' });
+      return;
+    }
+
+    const ok = await bcrypt.compare(String(password || ''), user.password_hash);
+    if (!ok) {
+      res.status(401).json({ error: 'Email hoặc mật khẩu không đúng.' });
+      return;
+    }
+
+    setAuthCookie(res, user);
+    res.json({ user: getPublicUser(user) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.put('/api/data', requireAppAccess, async (req, res) => {
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({ user: getPublicUser(req.user) });
+});
+
+app.post('/api/auth/logout', (_req, res) => {
+  clearAuthCookie(res);
+  res.json({ ok: true });
+});
+
+app.get('/api/data', requireAuth, async (req, res) => {
   try {
-    res.json(await writeState(req.body));
+    res.json(await readState(req.user.id));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/ai/analyze', requireAppAccess, upload.single('file'), async (req, res) => {
+app.put('/api/data', requireAuth, async (req, res) => {
+  try {
+    res.json(await writeState(req.user.id, req.body));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ai/analyze', requireAuth, upload.single('file'), async (req, res) => {
   try {
     const { part, userAnswer, questionText } = req.body;
     const parts = [{ text: analysisPrompt({ part, userAnswer, questionText }) }];
@@ -174,7 +293,7 @@ app.post('/api/ai/analyze', requireAppAccess, upload.single('file'), async (req,
   }
 });
 
-app.post('/api/ai/report', requireAppAccess, async (req, res) => {
+app.post('/api/ai/report', requireAuth, async (req, res) => {
   try {
     const { stats, sessions, mistakes } = req.body;
     const prompt = `

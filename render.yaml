@@ -12,5 +12,5 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: APP_PASSWORD
+      - key: JWT_SECRET
         sync: false

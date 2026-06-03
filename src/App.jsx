@@ -12,6 +12,7 @@ import {
   FileText,
   Filter,
   LayoutDashboard,
+  LogOut,
   Lock,
   Menu,
   NotebookTabs,
@@ -40,7 +41,7 @@ import {
 } from 'recharts';
 
 const STORAGE_KEY = 'toeic-tracker-ai-state-v1';
-const ACCESS_PASSWORD_KEY = 'toeic-tracker-ai-app-password';
+const EMPTY_STATE = { sessions: [], mistakes: [], reports: [] };
 
 const PARTS = [
   { id: 'Part 1', skill: 'Listening' },
@@ -270,10 +271,14 @@ function calculateStats(sessions, mistakes) {
   };
 }
 
-function loadState() {
+function stateKey(userId) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+function loadState(userId) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { sessions: [], mistakes: [], reports: [] };
+    const raw = localStorage.getItem(stateKey(userId));
+    if (!raw) return { ...EMPTY_STATE };
     const parsed = JSON.parse(raw);
     return {
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
@@ -281,23 +286,17 @@ function loadState() {
       reports: Array.isArray(parsed.reports) ? parsed.reports : [],
     };
   } catch {
-    return { sessions: [], mistakes: [], reports: [] };
+    return { ...EMPTY_STATE };
   }
 }
 
-function loadStoredPassword() {
-  try {
-    return sessionStorage.getItem(ACCESS_PASSWORD_KEY) || '';
-  } catch {
-    return '';
-  }
+function saveLocalState(userId, state) {
+  if (!userId) return;
+  localStorage.setItem(stateKey(userId), JSON.stringify(state));
 }
 
-function apiHeaders(appPassword, extra = {}) {
-  return {
-    ...extra,
-    ...(appPassword ? { 'x-app-password': appPassword } : {}),
-  };
+function isStateEmpty(state) {
+  return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length;
 }
 
 function StatCard({ icon: Icon, label, value, detail, tone = 'blue' }) {
@@ -325,12 +324,13 @@ function EmptyState({ title, action }) {
   );
 }
 
-function AccessGate({ error, onUnlock }) {
-  const [password, setPassword] = useState('');
+function AuthGate({ error, onSubmit }) {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
 
   function submit(event) {
     event.preventDefault();
-    onUnlock(password);
+    onSubmit(mode, form);
   }
 
   return (
@@ -338,21 +338,47 @@ function AccessGate({ error, onUnlock }) {
       <section className="access-panel">
         <div className="brand-mark">T</div>
         <h1>TOEIC Tracker</h1>
-        <p>Dữ liệu backend và AI API đang được bảo vệ bằng mật khẩu ứng dụng.</p>
+        <p>Đăng nhập để lưu nhật ký, sổ tay lỗi sai và báo cáo AI theo tài khoản riêng.</p>
+        <div className="auth-tabs">
+          <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
+            Đăng nhập
+          </button>
+          <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
+            Đăng ký
+          </button>
+        </div>
         <form onSubmit={submit} className="stack-form">
-          <Field label="Mật khẩu ứng dụng">
+          {mode === 'register' && (
+            <Field label="Tên hiển thị">
+              <input
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                autoFocus
+                placeholder="Bao"
+              />
+            </Field>
+          )}
+          <Field label="Email">
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              autoFocus={mode === 'login'}
+              placeholder="you@example.com"
+            />
+          </Field>
+          <Field label="Mật khẩu">
             <input
               type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoFocus
-              placeholder="Nhập APP_PASSWORD"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder="Ít nhất 6 ký tự"
             />
           </Field>
           {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
           <button className="primary-button" type="submit">
             <Lock size={18} />
-            Mở ứng dụng
+            {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
           </button>
         </form>
       </section>
@@ -955,7 +981,7 @@ function Mistakes({ mistakes, setMistakes, initialDraft }) {
   );
 }
 
-function AIAnalyzer({ appPassword, onSaveMistake }) {
+function AIAnalyzer({ onSaveMistake }) {
   const [form, setForm] = useState({ part: 'Part 5', userAnswer: '', questionText: '' });
   const [file, setFile] = useState(null);
   const [results, setResults] = useState([]);
@@ -975,7 +1001,7 @@ function AIAnalyzer({ appPassword, onSaveMistake }) {
       if (file) payload.append('file', file);
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
-        headers: apiHeaders(appPassword),
+        credentials: 'include',
         body: payload,
       });
       const data = await response.json();
@@ -1111,7 +1137,7 @@ function AIAnalyzer({ appPassword, onSaveMistake }) {
   );
 }
 
-function Reports({ appPassword, stats, sessions, mistakes, reports, setReports }) {
+function Reports({ stats, sessions, mistakes, reports, setReports }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -1121,7 +1147,8 @@ function Reports({ appPassword, stats, sessions, mistakes, reports, setReports }
     try {
       const response = await fetch('/api/ai/report', {
         method: 'POST',
-        headers: apiHeaders(appPassword, { 'Content-Type': 'application/json' }),
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stats, sessions, mistakes }),
       });
       const data = await response.json();
@@ -1172,14 +1199,13 @@ function Reports({ appPassword, stats, sessions, mistakes, reports, setReports }
 }
 
 export default function App() {
-  const [data, setData] = useState(loadState);
+  const [data, setData] = useState({ ...EMPTY_STATE });
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsed, setCollapsed] = useState(false);
   const [aiDraft, setAiDraft] = useState(null);
-  const [appPassword, setAppPassword] = useState(loadStoredPassword);
+  const [auth, setAuth] = useState({ checked: false, user: null, error: '', loading: false });
   const [backend, setBackend] = useState({
     checked: false,
-    requiresPassword: false,
     syncEnabled: false,
     saving: false,
     storage: 'local',
@@ -1188,23 +1214,25 @@ export default function App() {
   const importRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (!auth.user) return undefined;
 
     if (!backend.syncEnabled) return undefined;
+    saveLocalState(auth.user.id, data);
 
     const timer = window.setTimeout(async () => {
       setBackend((current) => ({ ...current, saving: true, error: '' }));
       try {
         const response = await fetch('/api/data', {
           method: 'PUT',
-          headers: apiHeaders(appPassword, { 'Content-Type': 'application/json' }),
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
         const payload = await response.json().catch(() => ({}));
         if (response.status === 401) {
-          sessionStorage.removeItem(ACCESS_PASSWORD_KEY);
-          setAppPassword('');
-          throw new Error('Mật khẩu ứng dụng không đúng.');
+          setAuth({ checked: true, user: null, error: 'Phiên đăng nhập đã hết hạn.', loading: false });
+          setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
+          return;
         }
         if (!response.ok) throw new Error(payload.error || 'Không lưu được dữ liệu backend.');
         setBackend((current) => ({ ...current, saving: false, error: '' }));
@@ -1214,74 +1242,41 @@ export default function App() {
     }, 650);
 
     return () => window.clearTimeout(timer);
-  }, [data, backend.syncEnabled, appPassword]);
+  }, [data, backend.syncEnabled, auth.user]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadBackendData() {
+    async function boot() {
       try {
         const healthResponse = await fetch('/api/health');
         const health = await healthResponse.json();
 
         if (cancelled) return;
 
-        if (health.requiresPassword && !appPassword) {
-          setBackend({
-            checked: true,
-            requiresPassword: true,
-            syncEnabled: false,
-            saving: false,
-            storage: health.storage || 'backend',
-            error: '',
-          });
-          return;
-        }
+        setBackend((current) => ({
+          ...current,
+          checked: true,
+          storage: health.storage || 'backend',
+        }));
 
-        const dataResponse = await fetch('/api/data', {
-          headers: apiHeaders(appPassword),
-        });
-        const payload = await dataResponse.json().catch(() => ({}));
+        const meResponse = await fetch('/api/auth/me', { credentials: 'include' });
+        const mePayload = await meResponse.json().catch(() => ({}));
 
         if (cancelled) return;
 
-        if (dataResponse.status === 401) {
-          sessionStorage.removeItem(ACCESS_PASSWORD_KEY);
-          setAppPassword('');
-          setBackend({
-            checked: true,
-            requiresPassword: true,
-            syncEnabled: false,
-            saving: false,
-            storage: health.storage || 'backend',
-            error: 'Mật khẩu ứng dụng không đúng.',
-          });
+        if (!meResponse.ok) {
+          setAuth({ checked: true, user: null, error: '', loading: false });
+          setBackend((current) => ({ ...current, checked: true, syncEnabled: false }));
           return;
         }
 
-        if (!dataResponse.ok) throw new Error(payload.error || 'Không tải được dữ liệu backend.');
-
-        const remoteState = {
-          sessions: Array.isArray(payload.sessions) ? payload.sessions : [],
-          mistakes: Array.isArray(payload.mistakes) ? payload.mistakes : [],
-          reports: Array.isArray(payload.reports) ? payload.reports : [],
-        };
-
-        setData(remoteState);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState));
-        setBackend({
-          checked: true,
-          requiresPassword: Boolean(health.requiresPassword),
-          syncEnabled: true,
-          saving: false,
-          storage: health.storage || 'backend',
-          error: '',
-        });
+        setAuth({ checked: true, user: mePayload.user, error: '', loading: false });
+        await fetchBackendData(mePayload.user, health.storage || 'backend');
       } catch (error) {
         if (!cancelled) {
           setBackend({
             checked: true,
-            requiresPassword: false,
             syncEnabled: false,
             saving: false,
             storage: 'local',
@@ -1291,11 +1286,51 @@ export default function App() {
       }
     }
 
-    loadBackendData();
+    boot();
     return () => {
       cancelled = true;
     };
-  }, [appPassword]);
+  }, []);
+
+  async function fetchBackendData(user, storage = backend.storage) {
+    const response = await fetch('/api/data', { credentials: 'include' });
+    const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      setAuth({ checked: true, user: null, error: 'Vui lòng đăng nhập lại.', loading: false });
+      setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
+      return;
+    }
+    if (!response.ok) throw new Error(payload.error || 'Không tải được dữ liệu backend.');
+
+    const remoteState = {
+      sessions: Array.isArray(payload.sessions) ? payload.sessions : [],
+      mistakes: Array.isArray(payload.mistakes) ? payload.mistakes : [],
+      reports: Array.isArray(payload.reports) ? payload.reports : [],
+    };
+    const userCachedState = loadState(user.id);
+    const legacyCachedState = loadState();
+    const cachedState = !isStateEmpty(userCachedState) ? userCachedState : legacyCachedState;
+    const nextState = isStateEmpty(remoteState) && !isStateEmpty(cachedState) ? cachedState : remoteState;
+
+    setData(nextState);
+    saveLocalState(user.id, nextState);
+    setBackend({
+      checked: true,
+      syncEnabled: true,
+      saving: false,
+      storage,
+      error: '',
+    });
+
+    if (nextState === cachedState) {
+      await fetch('/api/data', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextState),
+      });
+    }
+  }
 
   const stats = useMemo(() => calculateStats(data.sessions, data.mistakes), [data.sessions, data.mistakes]);
 
@@ -1353,15 +1388,46 @@ export default function App() {
     reports: 'Báo cáo',
   };
 
-  function unlockApp(password) {
-    const trimmed = password.trim();
-    if (!trimmed) return;
-    sessionStorage.setItem(ACCESS_PASSWORD_KEY, trimmed);
-    setAppPassword(trimmed);
+  async function handleAuthSubmit(mode, form) {
+    setAuth((current) => ({ ...current, loading: true, error: '' }));
+    try {
+      const response = await fetch(`/api/auth/${mode === 'register' ? 'register' : 'login'}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Không đăng nhập được.');
+
+      setAuth({ checked: true, user: payload.user, error: '', loading: false });
+      await fetchBackendData(payload.user, backend.storage);
+    } catch (error) {
+      setAuth({ checked: true, user: null, error: error.message, loading: false });
+    }
   }
 
-  if (backend.requiresPassword && !appPassword) {
-    return <AccessGate error={backend.error} onUnlock={unlockApp} />;
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    setAuth({ checked: true, user: null, error: '', loading: false });
+    setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
+    setData({ ...EMPTY_STATE });
+  }
+
+  if (!auth.checked) {
+    return (
+      <main className="access-shell">
+        <section className="access-panel">
+          <div className="brand-mark">T</div>
+          <h1>TOEIC Tracker</h1>
+          <p>Đang kiểm tra phiên đăng nhập...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!auth.user) {
+    return <AuthGate error={auth.error} onSubmit={handleAuthSubmit} />;
   }
 
   return (
@@ -1383,6 +1449,7 @@ export default function App() {
             <h1>{titleMap[activeTab]}</h1>
           </div>
           <div className="topbar-summary">
+            <span className="user-pill">{auth.user.name || auth.user.email}</span>
             <span className={backend.syncEnabled ? 'sync-pill ok' : 'sync-pill'}>
               <Cloud size={15} />
               {backend.syncEnabled ? `BE: ${backend.storage}` : 'Local cache'}
@@ -1391,6 +1458,10 @@ export default function App() {
             <span>{stats.totalQuestions} câu</span>
             <span>{stats.accuracy}% accuracy</span>
             <span>{stats.openMistakes} lỗi mở</span>
+            <button className="topbar-logout" onClick={logout} title="Đăng xuất" aria-label="Đăng xuất">
+              <LogOut size={16} />
+              Đăng xuất
+            </button>
           </div>
         </header>
 
@@ -1407,10 +1478,9 @@ export default function App() {
         )}
         {activeTab === 'journal' && <Journal sessions={data.sessions} setSessions={setSessions} />}
         {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} initialDraft={aiDraft} />}
-        {activeTab === 'ai' && <AIAnalyzer appPassword={appPassword} onSaveMistake={saveAIMistake} />}
+        {activeTab === 'ai' && <AIAnalyzer onSaveMistake={saveAIMistake} />}
         {activeTab === 'reports' && (
           <Reports
-            appPassword={appPassword}
             stats={stats}
             sessions={data.sessions}
             mistakes={data.mistakes}
