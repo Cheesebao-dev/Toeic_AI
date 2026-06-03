@@ -69,9 +69,14 @@ function cookieOptions() {
   };
 }
 
+function createAuthToken(user) {
+  return jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: '30d' });
+}
+
 function setAuthCookie(res, user) {
-  const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: '30d' });
+  const token = createAuthToken(user);
   res.cookie(AUTH_COOKIE, token, cookieOptions());
+  return token;
 }
 
 function clearAuthCookie(res) {
@@ -80,7 +85,8 @@ function clearAuthCookie(res) {
 
 async function requireAuth(req, res, next) {
   try {
-    const token = req.cookies?.[AUTH_COOKIE];
+    const bearerToken = String(req.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1];
+    const token = req.cookies?.[AUTH_COOKIE] || bearerToken;
     if (!token) {
       res.status(401).json({ error: 'Authentication required.' });
       return;
@@ -296,8 +302,8 @@ app.post('/api/auth/register', async (req, res) => {
       email,
       passwordHash,
     });
-    setAuthCookie(res, user);
-    res.status(201).json({ user: getPublicUser(user) });
+    const token = setAuthCookie(res, user);
+    res.status(201).json({ user: getPublicUser(user), token });
   } catch (error) {
     if (error.code === '23505' || error.code === 'duplicate_email') {
       res.status(409).json({ error: 'Email này đã có tài khoản.' });
@@ -322,8 +328,8 @@ app.post('/api/auth/login', async (req, res) => {
       return;
     }
 
-    setAuthCookie(res, user);
-    res.json({ user: getPublicUser(user) });
+    const token = setAuthCookie(res, user);
+    res.json({ user: getPublicUser(user), token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -48,6 +48,7 @@ import {
 } from 'recharts';
 
 const STORAGE_KEY = 'toeic-tracker-ai-state-v1';
+const AUTH_TOKEN_KEY = 'toeic-tracker-ai-auth-token';
 const EMPTY_STATE = { sessions: [], mistakes: [], reports: [] };
 
 const PARTS = [
@@ -558,19 +559,42 @@ function saveLocalState(userId, state) {
   localStorage.setItem(stateKey(userId), JSON.stringify(state));
 }
 
+function getStoredAuthToken() {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function storeAuthToken(token) {
+  if (!token) return;
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function clearStoredAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
 function apiUrl(path, baseUrl = API_BASE_URL) {
   return `${baseUrl}${path}`;
 }
 
 async function apiFetch(path, options) {
-  const response = await fetch(apiUrl(path), options);
+  const authToken = getStoredAuthToken();
+  const headers = new Headers(options?.headers || {});
+  if (authToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+  const requestOptions = { ...options, headers };
+  const response = await fetch(apiUrl(path), requestOptions);
   const contentType = response.headers.get('content-type') || '';
   const shouldRetryDeployedApi =
     API_BASE_URL !== DEPLOYED_API_ORIGIN
     && (response.status === 404 || contentType.toLowerCase().includes('text/html'));
 
   if (shouldRetryDeployedApi) {
-    return fetch(apiUrl(path, DEPLOYED_API_ORIGIN), options);
+    return fetch(apiUrl(path, DEPLOYED_API_ORIGIN), requestOptions);
   }
 
   return response;
@@ -2184,6 +2208,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
       });
       const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
       if (response.status === 401) {
+        clearStoredAuthToken();
         throw new Error('Bạn cần đăng nhập lại để dùng trợ lý AI.');
       }
       if (!response.ok) throw new Error(payload.error || `Không gửi được câu hỏi. HTTP ${response.status}`);
@@ -2317,6 +2342,7 @@ export default function App() {
         });
         const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
         if (response.status === 401) {
+          clearStoredAuthToken();
           setAuth({ checked: true, user: null, error: 'Phiên đăng nhập đã hết hạn.', loading: false });
           setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
           return;
@@ -2354,6 +2380,7 @@ export default function App() {
         if (cancelled) return;
 
         if (!meResponse.ok) {
+          if (meResponse.status === 401) clearStoredAuthToken();
           setAuth({ checked: true, user: null, error: '', loading: false });
           setBackend((current) => ({ ...current, checked: true, syncEnabled: false }));
           return;
@@ -2385,6 +2412,7 @@ export default function App() {
     const response = await apiFetch('/api/data', { credentials: 'include' });
     const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
     if (response.status === 401) {
+      clearStoredAuthToken();
       setAuth({ checked: true, user: null, error: 'Vui lòng đăng nhập lại.', loading: false });
       setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
       return;
@@ -2482,6 +2510,7 @@ export default function App() {
       const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
       if (!response.ok) throw new Error(payload.error || 'Không đăng nhập được.');
 
+      storeAuthToken(payload.token);
       setAuth({ checked: true, user: payload.user, error: '', loading: false });
       await fetchBackendData(payload.user, backend.storage);
     } catch (error) {
@@ -2491,6 +2520,7 @@ export default function App() {
 
   async function logout() {
     await apiFetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    clearStoredAuthToken();
     setAuth({ checked: true, user: null, error: '', loading: false });
     setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
     setData({ ...EMPTY_STATE });
