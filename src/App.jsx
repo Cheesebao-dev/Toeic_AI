@@ -444,26 +444,53 @@ function AuthGate({ error, onSubmit }) {
             <div className="connect-orb"></div>
             <div className="connector-line line-a"></div>
             <div className="connector-line line-b"></div>
-            <div className="connector-node node-ai">AI</div>
-            <div className="connector-node node-toeic">T</div>
-            <div className="connector-node node-score">G</div>
+            <div className="connector-node node-ai">
+              <span className="node-grid-mark">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+              </span>
+            </div>
+            <div className="connector-node node-toeic">
+              <span className="node-app-mark">T</span>
+            </div>
+            <div className="connector-node node-score">
+              <span className="node-google-mark">G</span>
+            </div>
             <div className="dashboard-card">
               <div className="dash-top">
-                <span></span>
+                <div>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <strong></strong>
+              </div>
+              <div className="dash-filter-row">
                 <span></span>
                 <span></span>
               </div>
               <div className="dash-row">
-                <strong></strong>
-                <span></span>
+                <strong className="avatar-one"></strong>
+                <div>
+                  <span></span>
+                  <small></small>
+                </div>
               </div>
               <div className="dash-row">
-                <strong></strong>
-                <span></span>
+                <strong className="avatar-two"></strong>
+                <div>
+                  <span></span>
+                  <small></small>
+                </div>
               </div>
               <div className="dash-row">
-                <strong></strong>
-                <span></span>
+                <strong className="avatar-three"></strong>
+                <div>
+                  <span></span>
+                  <small></small>
+                </div>
               </div>
             </div>
           </div>

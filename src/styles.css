@@ -838,31 +838,31 @@ button:disabled {
   min-height: 720px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 52% 38%, rgba(56, 189, 248, 0.22), transparent 30%),
-    linear-gradient(135deg, #1262d6, #0d5bd4 58%, #0a55ca);
+    radial-gradient(circle at 50% 37%, rgba(34, 211, 238, 0.2), transparent 31%),
+    linear-gradient(135deg, #0f65dc, #0d60d7 58%, #0b58cf);
 }
 
 .split-visual::before {
   position: absolute;
   content: "";
-  width: 372px;
-  height: 372px;
-  top: 112px;
+  width: 382px;
+  height: 382px;
+  top: 118px;
   left: 50%;
-  transform: translateX(-50%);
-  background: rgba(56, 189, 248, 0.16);
+  transform: translateX(-49%);
+  background: rgba(56, 189, 248, 0.14);
   border-radius: 50%;
 }
 
 .split-visual::after {
   position: absolute;
   content: "";
-  width: 300px;
-  height: 300px;
-  top: 148px;
+  width: 306px;
+  height: 306px;
+  top: 155px;
   left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateX(-49%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 50%;
 }
 
@@ -871,132 +871,260 @@ button:disabled {
   z-index: 1;
   width: 430px;
   height: 360px;
-  margin-top: 30px;
+  margin-top: 24px;
 }
 
 .connect-orb {
   position: absolute;
-  left: 118px;
-  top: 90px;
-  width: 146px;
-  height: 146px;
-  border: 20px solid rgba(147, 197, 253, 0.22);
-  border-radius: 30px;
-  transform: rotate(0deg);
+  left: 86px;
+  top: 118px;
+  width: 174px;
+  height: 174px;
+  border: 24px solid rgba(147, 197, 253, 0.24);
+  border-radius: 34px;
 }
 
 .connector-line {
   position: absolute;
-  background: rgba(147, 197, 253, 0.28);
+  z-index: 1;
+  background: rgba(147, 197, 253, 0.34);
   border-radius: 999px;
 }
 
 .line-a {
-  left: 92px;
-  top: 164px;
-  width: 232px;
-  height: 20px;
+  left: 54px;
+  top: 198px;
+  width: 236px;
+  height: 22px;
 }
 
 .line-b {
-  left: 170px;
-  top: 116px;
-  width: 20px;
-  height: 138px;
+  left: 167px;
+  top: 110px;
+  width: 22px;
+  height: 210px;
 }
 
 .connector-node {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   display: grid;
-  width: 66px;
-  height: 66px;
+  width: 68px;
+  height: 68px;
   place-items: center;
   color: #1262d6;
   background: #ffffff;
-  border: 8px solid rgba(191, 219, 254, 0.85);
+  border: 8px solid rgba(191, 219, 254, 0.9);
   border-radius: 50%;
   font-size: 18px;
   font-weight: 900;
-  box-shadow: 0 16px 28px rgba(0, 36, 102, 0.18);
+  box-shadow:
+    0 16px 28px rgba(0, 36, 102, 0.2),
+    inset 0 0 0 1px rgba(37, 99, 235, 0.08);
 }
 
 .node-ai {
-  left: 44px;
-  top: 148px;
+  left: 36px;
+  top: 162px;
 }
 
 .node-toeic {
-  left: 84px;
-  top: 66px;
+  left: 82px;
+  top: 70px;
 }
 
 .node-score {
   left: 92px;
-  top: 236px;
+  top: 270px;
   color: #4285f4;
+}
+
+.node-app-mark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: #1262d6;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.node-google-mark {
+  font-size: 27px;
+  font-weight: 900;
+  color: #4285f4;
+}
+
+.node-grid-mark {
+  display: grid;
+  grid-template-columns: repeat(2, 10px);
+  gap: 4px;
+}
+
+.node-grid-mark i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.node-grid-mark i:nth-child(1) {
+  background: #ef4444;
+}
+
+.node-grid-mark i:nth-child(2) {
+  background: #f59e0b;
+}
+
+.node-grid-mark i:nth-child(3) {
+  background: #22c55e;
+}
+
+.node-grid-mark i:nth-child(4) {
+  background: #3b82f6;
 }
 
 .dashboard-card {
   position: absolute;
-  z-index: 2;
-  right: 20px;
+  z-index: 4;
+  right: -2px;
   top: 72px;
-  width: 212px;
+  width: 220px;
   min-height: 226px;
-  padding: 16px;
+  padding: 14px;
   background: #ffffff;
   border-radius: 9px;
-  box-shadow: 0 20px 40px rgba(0, 36, 102, 0.2);
+  box-shadow: 0 22px 42px rgba(0, 36, 102, 0.23);
 }
 
 .dash-top {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
-.dash-top span {
+.dash-top div {
+  display: flex;
+  gap: 5px;
+}
+
+.dash-top div span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
 
-.dash-top span:nth-child(1) {
+.dash-top div span:nth-child(1) {
   background: #ef4444;
 }
 
-.dash-top span:nth-child(2) {
+.dash-top div span:nth-child(2) {
   background: #f59e0b;
 }
 
-.dash-top span:nth-child(3) {
+.dash-top div span:nth-child(3) {
   background: #22c55e;
+}
+
+.dash-top strong {
+  display: block;
+  width: 68px;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.dash-filter-row {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.dash-filter-row span {
+  height: 16px;
+  background: #eef2f7;
+  border-radius: 4px;
+}
+
+.dash-filter-row span:first-child {
+  position: relative;
+}
+
+.dash-filter-row span:first-child::after {
+  position: absolute;
+  content: "";
+  left: 14px;
+  top: 6px;
+  width: 48px;
+  height: 5px;
+  background: #aeb9c8;
+  border-radius: 999px;
 }
 
 .dash-row {
   display: grid;
-  grid-template-columns: 38px 1fr;
-  gap: 10px;
+  grid-template-columns: 34px 1fr;
+  gap: 9px;
   align-items: center;
-  margin-bottom: 13px;
-  padding: 10px;
-  background: #f8fafc;
+  min-height: 50px;
+  margin-bottom: 9px;
+  padding: 8px 10px;
+  background: #ffffff;
   border: 1px solid #e8eef7;
   border-radius: 7px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
 }
 
 .dash-row strong {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #bfdbfe, #eff6ff);
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
+}
+
+.dash-row .avatar-one {
+  background:
+    radial-gradient(circle at 50% 38%, #f8d4c4 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 72%, #bfdbfe 0 42%, transparent 43%),
+    #fef3c7;
+}
+
+.dash-row .avatar-two {
+  background:
+    radial-gradient(circle at 50% 38%, #f1c9aa 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 72%, #cbd5e1 0 42%, transparent 43%),
+    #1f2937;
+}
+
+.dash-row .avatar-three {
+  background:
+    radial-gradient(circle at 50% 38%, #f0c9b1 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 72%, #dbeafe 0 42%, transparent 43%),
+    #fce7f3;
+}
+
+.dash-row div {
+  display: grid;
+  gap: 7px;
 }
 
 .dash-row span {
   display: block;
-  height: 8px;
-  background: #cbd5e1;
+  width: 96px;
+  height: 7px;
+  background: #9daabc;
+  border-radius: 999px;
+}
+
+.dash-row small {
+  display: block;
+  width: 132px;
+  height: 5px;
+  background: #d8e0ec;
   border-radius: 999px;
 }
 
