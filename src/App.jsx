@@ -558,12 +558,22 @@ function saveLocalState(userId, state) {
   localStorage.setItem(stateKey(userId), JSON.stringify(state));
 }
 
-function apiUrl(path) {
-  return `${API_BASE_URL}${path}`;
+function apiUrl(path, baseUrl = API_BASE_URL) {
+  return `${baseUrl}${path}`;
 }
 
-function apiFetch(path, options) {
-  return fetch(apiUrl(path), options);
+async function apiFetch(path, options) {
+  const response = await fetch(apiUrl(path), options);
+  const contentType = response.headers.get('content-type') || '';
+  const shouldRetryDeployedApi =
+    API_BASE_URL !== DEPLOYED_API_ORIGIN
+    && (response.status === 404 || contentType.toLowerCase().includes('text/html'));
+
+  if (shouldRetryDeployedApi) {
+    return fetch(apiUrl(path, DEPLOYED_API_ORIGIN), options);
+  }
+
+  return response;
 }
 
 async function readJsonResponse(response) {
