@@ -532,6 +532,350 @@ button:disabled {
   line-height: 1.55;
 }
 
+.access-shell.access-loading-shell {
+  padding: clamp(18px, 4vw, 42px);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 46%, #eef6ff 100%);
+}
+
+.auth-loading-card {
+  display: grid;
+  width: min(100%, 520px);
+  justify-items: center;
+  gap: 18px;
+  padding: clamp(26px, 4vw, 34px);
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(219, 227, 238, 0.96);
+  border-radius: var(--radius);
+  box-shadow:
+    0 24px 58px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.auth-loading-brand {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.auth-loading-brand .brand-mark {
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  border-radius: 12px;
+  font-size: 24px;
+  box-shadow:
+    0 14px 28px rgba(47, 109, 240, 0.22),
+    0 0 0 7px #eff6ff;
+}
+
+.auth-loading-brand div:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-loading-brand span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.auth-loading-brand h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(24px, 3.6vw, 32px);
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.study-truck-scene {
+  position: relative;
+  width: min(100%, 340px);
+  height: 144px;
+  overflow: hidden;
+}
+
+.study-truck {
+  position: absolute;
+  right: 58px;
+  bottom: 32px;
+  --study-truck-scale: 1;
+  width: 186px;
+  height: 78px;
+  transform-origin: right bottom;
+  animation: study-truck-motion 980ms linear infinite;
+}
+
+.study-truck-body {
+  position: absolute;
+  left: 0;
+  bottom: 18px;
+  width: 120px;
+  height: 52px;
+  color: #2f6df0;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+  border-radius: 8px 4px 5px 8px;
+  box-shadow: inset 0 -10px 0 #eef6ff;
+}
+
+.study-truck-body strong {
+  position: absolute;
+  left: 14px;
+  top: 13px;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: 0.5px;
+}
+
+.study-truck-body span {
+  position: absolute;
+  right: 13px;
+  top: 15px;
+  width: 28px;
+  height: 18px;
+  background:
+    linear-gradient(90deg, #2f6df0 0 7px, transparent 7px 10px, #2f6df0 10px 17px, transparent 17px 20px, #2f6df0 20px 28px);
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.study-truck-cabin {
+  position: absolute;
+  left: 116px;
+  bottom: 18px;
+  width: 60px;
+  height: 46px;
+  background: linear-gradient(145deg, #2f6df0, #245ee0);
+  border: 2px solid #0f172a;
+  border-radius: 4px 14px 6px 3px;
+}
+
+.study-truck-cabin span {
+  position: absolute;
+  left: 11px;
+  top: 8px;
+  width: 33px;
+  height: 17px;
+  background: #dff1ff;
+  border: 2px solid #0f172a;
+  border-radius: 4px 10px 4px 4px;
+}
+
+.study-truck-cabin i {
+  position: absolute;
+  right: 5px;
+  bottom: 7px;
+  width: 7px;
+  height: 7px;
+  background: #fde68a;
+  border: 1px solid #0f172a;
+  border-radius: 2px;
+}
+
+.study-truck-tires {
+  position: absolute;
+  left: 24px;
+  right: 18px;
+  bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.study-truck-tires b {
+  display: block;
+  width: 30px;
+  height: 30px;
+  background:
+    radial-gradient(circle, #ffffff 0 6px, #0f172a 7px 13px, transparent 14px),
+    conic-gradient(from 0deg, #94a3b8 0 25%, #0f172a 25% 32%, #94a3b8 32% 58%, #0f172a 58% 66%, #94a3b8 66% 100%);
+  border: 2px solid #0f172a;
+  border-radius: 50%;
+  animation: study-wheel-spin 800ms linear infinite;
+}
+
+.study-road {
+  position: absolute;
+  right: 0;
+  bottom: 26px;
+  left: 0;
+  height: 2px;
+  background: #0f172a;
+  border-radius: 999px;
+}
+
+.study-road::before,
+.study-road::after {
+  position: absolute;
+  top: -1px;
+  content: "";
+  height: 4px;
+  background: #0f172a;
+  border-left: 12px solid #ffffff;
+  border-radius: 999px;
+  animation: study-road-slide 1180ms linear infinite;
+}
+
+.study-road::before {
+  right: -70px;
+  width: 34px;
+}
+
+.study-road::after {
+  right: -136px;
+  width: 18px;
+  animation-delay: 390ms;
+}
+
+.study-truck-lamp {
+  position: absolute;
+  right: -54px;
+  bottom: 27px;
+  width: 34px;
+  height: 82px;
+  animation: study-road-slide 1400ms linear infinite;
+}
+
+.study-truck-lamp i {
+  position: absolute;
+  right: 13px;
+  bottom: 0;
+  width: 5px;
+  height: 70px;
+  background: #0f172a;
+  border-radius: 999px 999px 0 0;
+}
+
+.study-truck-lamp span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 32px;
+  height: 18px;
+  background: #ffffff;
+  border: 3px solid #0f172a;
+  border-radius: 18px 18px 6px 6px;
+}
+
+.auth-loading-card > p {
+  margin: -2px 0 0;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.auth-loading-dots {
+  display: flex;
+  height: 10px;
+  align-items: center;
+  gap: 7px;
+}
+
+.auth-loading-dots span {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: #2f6df0;
+  border-radius: 50%;
+  animation: auth-dot-pulse 900ms ease-in-out infinite;
+}
+
+.auth-loading-dots span:nth-child(2) {
+  animation-delay: 130ms;
+}
+
+.auth-loading-dots span:nth-child(3) {
+  animation-delay: 260ms;
+}
+
+@keyframes study-truck-motion {
+  0%,
+  100% {
+    transform: translateY(0) scale(var(--study-truck-scale));
+  }
+
+  50% {
+    transform: translateY(3px) scale(var(--study-truck-scale));
+  }
+}
+
+@keyframes study-wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes study-road-slide {
+  to {
+    transform: translateX(-430px);
+  }
+}
+
+@keyframes auth-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-loading-card {
+    gap: 16px;
+    padding: 24px 20px;
+  }
+
+  .auth-loading-brand {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .auth-loading-brand .brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    font-size: 22px;
+  }
+
+  .auth-loading-brand h1 {
+    font-size: 23px;
+  }
+
+  .study-truck-scene {
+    width: 100%;
+    height: 126px;
+  }
+
+  .study-truck {
+    right: 32px;
+    --study-truck-scale: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-truck,
+  .study-truck-tires b,
+  .study-road::before,
+  .study-road::after,
+  .study-truck-lamp,
+  .auth-loading-dots span {
+    animation: none;
+  }
+}
+
 .auth-card-body {
   width: min(100%, 360px);
   margin: 0 auto;

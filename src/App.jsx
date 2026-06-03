@@ -868,6 +868,51 @@ function AuthVisualArtwork({ slide }) {
   return <PracticeAuthVisual slide={slide} />;
 }
 
+function AuthLoadingScreen() {
+  return (
+    <main className="access-shell access-loading-shell" aria-busy="true">
+      <section className="auth-loading-card" role="status" aria-live="polite">
+        <div className="auth-loading-brand">
+          <div className="brand-mark">T</div>
+          <div>
+            <span>TOEIC Tracker</span>
+            <h1>{'\u0110ang m\u1edf kh\u00f4ng gian h\u1ecdc'}</h1>
+          </div>
+        </div>
+
+        <div className="study-truck-scene" aria-hidden="true">
+          <div className="study-truck-lamp">
+            <i></i>
+            <span></span>
+          </div>
+          <div className="study-truck">
+            <div className="study-truck-body">
+              <strong>TOEIC</strong>
+              <span></span>
+            </div>
+            <div className="study-truck-cabin">
+              <span></span>
+              <i></i>
+            </div>
+            <div className="study-truck-tires">
+              <b></b>
+              <b></b>
+            </div>
+          </div>
+          <div className="study-road"></div>
+        </div>
+
+        <p>{'\u0110ang ki\u1ec3m tra phi\u00ean \u0111\u0103ng nh\u1eadp'}</p>
+        <div className="auth-loading-dots" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function AuthGate({ error, onSubmit }) {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -2791,15 +2836,7 @@ export default function App() {
   }
 
   if (!auth.checked) {
-    return (
-      <main className="access-shell">
-        <section className="access-panel">
-          <div className="brand-mark">T</div>
-          <h1>TOEIC Tracker</h1>
-          <p>Đang kiểm tra phiên đăng nhập...</p>
-        </section>
-      </main>
-    );
+    return <AuthLoadingScreen />;
   }
 
   if (!auth.user) {
