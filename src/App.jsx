@@ -81,7 +81,7 @@ const MISTAKE_TYPES = [
 
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
-const PIE_COLORS = ['#df4d8d', '#22a783', '#d78b18', '#dc4c6f', '#7b6ff1', '#4aa6d9', '#5b4a63'];
+const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
 
 const AUTH_VISUAL_SLIDES = [
   {
@@ -768,7 +768,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
                 <YAxis yAxisId="left" domain={[0, 990]} />
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
                 <Tooltip />
-                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#df4d8d" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
                 <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#22a783" strokeWidth={3} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -790,7 +790,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
               <XAxis dataKey="part" />
               <YAxis domain={[0, 100]} />
               <Tooltip />
-              <Bar dataKey="accuracy" fill="#df4d8d" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="accuracy" fill="#2563eb" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -850,7 +850,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
   const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2].score || 0 : 0;
   const scoreDelta = stats.latestScore && previousScore ? stats.latestScore - previousScore : 0;
   const reviewData = [
-    { name: 'Cần xử lý', value: stats.openMistakes, color: '#df4d8d' },
+    { name: 'Cần xử lý', value: stats.openMistakes, color: '#2563eb' },
     { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#22a783' },
   ];
   const reviewTotal = reviewData.reduce((sum, item) => sum + item.value, 0);
