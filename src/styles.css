@@ -2201,11 +2201,11 @@ textarea:focus {
   max-height: 560px;
   overflow: auto;
   margin: 0;
-  padding: 16px;
-  color: #0f172a;
-  font-size: 14px;
-  line-height: 1.6;
-  background: #f8fafc;
+  padding: 18px 20px;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.7;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius);
 }
@@ -2215,7 +2215,7 @@ textarea:focus {
 }
 
 .markdown-box > * + * {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .markdown-box h3,
@@ -2228,38 +2228,40 @@ textarea:focus {
 
 .markdown-box h3 {
   font-size: 18px;
-  font-weight: 900;
-}
-
-.markdown-box h4 {
-  font-size: 15px;
   font-weight: 850;
 }
 
-.markdown-box h5 {
-  font-size: 14px;
+.markdown-box h4 {
+  font-size: 15.5px;
   font-weight: 800;
 }
 
-.markdown-box p {
-  color: #334155;
+.markdown-box h5 {
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.markdown-box p,
+.markdown-box li {
+  color: #1f2937;
+  font-weight: 500;
 }
 
 .markdown-box ul,
 .markdown-box ol {
   display: grid;
-  gap: 7px;
-  padding-left: 20px;
-  color: #334155;
+  gap: 8px;
+  padding-left: 22px;
+  color: #1f2937;
 }
 
 .markdown-box li {
-  padding-left: 2px;
+  padding-left: 4px;
 }
 
 .markdown-box li::marker {
   color: #2563eb;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .markdown-list-nested {
@@ -2267,19 +2269,19 @@ textarea:focus {
 }
 
 .markdown-box strong {
-  color: #111827;
-  font-weight: 850;
+  color: #0f172a;
+  font-weight: 800;
 }
 
 .markdown-box hr {
   height: 1px;
-  background: #e2e8f0;
+  background: #dbe3ee;
   border: 0;
 }
 
 .markdown-box.mini {
   max-height: 220px;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .markdown-box.mini h3 {
