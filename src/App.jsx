@@ -1354,7 +1354,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           </div>
           {stats.partAccuracy.some((part) => part.total > 0) ? (
             <div className="overview-line-chart">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.partAccuracy}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
                   <XAxis dataKey="part" />
