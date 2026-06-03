@@ -340,58 +340,39 @@ function AuthGate({ error, onSubmit }) {
 
   return (
     <main className="access-shell">
-      <div className="auth-stage">
-        <section className="auth-visual" aria-hidden="true">
-          <div className="auth-brand">
-            <div className="auth-logo-mark">T</div>
-            <div>
-              <strong>TOEIC AI Platform</strong>
-              <span>Smart Practice Tracker</span>
-            </div>
-          </div>
-
-          <div className="ai-illustration">
-            <div className="orbit orbit-one"></div>
-            <div className="orbit orbit-two"></div>
-            <div className="platform-ring"></div>
-            <div className="desk-block">
-              <div className="screen-panel">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div className="score-tile">990</div>
-            </div>
-            <div className="book-stack">
-              <span></span>
-              <span></span>
-            </div>
-            <div className="ai-chip">AI</div>
-            <div className="metric-bubble bubble-one">P5</div>
-            <div className="metric-bubble bubble-two">82%</div>
-            <div className="metric-bubble bubble-three">R</div>
-          </div>
-        </section>
-
+      <div className="auth-stage auth-stage-split">
         <section className="access-panel">
-          <div className="auth-card-tabs">
-            <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
-              Đăng Nhập
-              {mode === 'login' && <span />}
-            </button>
-            <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
-              Đăng Ký
-              {mode === 'register' && <span />}
-            </button>
-          </div>
-
           <div className="auth-card-body">
+            <div className="split-brand-row">
+              <div className="split-logo-mark">T</div>
+              <strong>toeicwork</strong>
+            </div>
+
             <div className="auth-heading">
-              <h1>{mode === 'login' ? 'Chào mừng bạn quay lại!' : 'Tạo tài khoản học TOEIC'}</h1>
-              <p>{mode === 'login' ? 'Vui lòng đăng nhập để tiếp tục' : 'Lưu tiến độ, lỗi sai và báo cáo AI theo tài khoản riêng'}</p>
+              <h1>{mode === 'login' ? 'Log in to your Account' : 'Create your Account'}</h1>
+              <p>
+                {mode === 'login'
+                  ? 'Welcome back. Select method to log in:'
+                  : 'Start tracking your TOEIC practice with AI.'}
+              </p>
             </div>
 
             <form onSubmit={submit} className="auth-form">
+              <div className="auth-social-grid first">
+                <button type="button" className="auth-social-button">
+                  <span className="social-mark google">G</span>
+                  Google
+                </button>
+                <button type="button" className="auth-social-button">
+                  <span className="social-mark facebook">f</span>
+                  Facebook
+                </button>
+              </div>
+
+              <div className="auth-divider">
+                <span>or continue with email</span>
+              </div>
+
               {mode === 'register' && (
                 <label className="auth-input-row">
                   <UserRound size={20} />
@@ -399,19 +380,19 @@ function AuthGate({ error, onSubmit }) {
                     value={form.name}
                     onChange={(event) => setForm({ ...form, name: event.target.value })}
                     autoFocus
-                    placeholder="Tên hiển thị"
+                    placeholder="Full name"
                     autoComplete="name"
                   />
                 </label>
               )}
               <label className="auth-input-row">
-                {mode === 'login' ? <UserRound size={20} /> : <Mail size={20} />}
+                <Mail size={20} />
                 <input
                   type="email"
                   value={form.email}
                   onChange={(event) => setForm({ ...form, email: event.target.value })}
                   autoFocus={mode === 'login'}
-                  placeholder={mode === 'login' ? 'Tên tài khoản / Email' : 'Email đăng ký'}
+                  placeholder="Email"
                   autoComplete="email"
                 />
               </label>
@@ -421,7 +402,7 @@ function AuthGate({ error, onSubmit }) {
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                   onChange={(event) => setForm({ ...form, password: event.target.value })}
-                  placeholder="Mật khẩu"
+                  placeholder="Password"
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button
@@ -438,31 +419,62 @@ function AuthGate({ error, onSubmit }) {
               <div className="auth-meta-row">
                 <label>
                   <input type="checkbox" defaultChecked />
-                  <span>Ghi nhớ tôi</span>
+                  <span>Remember me</span>
                 </label>
-                <button type="button">Quên mật khẩu?</button>
+                <button type="button">Forgot Password?</button>
               </div>
 
               {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
               <button className="auth-submit" type="submit">
-                {mode === 'login' ? 'Đăng Nhập' : 'Tạo Tài Khoản'}
+                {mode === 'login' ? 'Log in' : 'Create account'}
               </button>
 
-              <div className="auth-divider">
-                <span>{mode === 'login' ? 'Hoặc đăng nhập bằng' : 'Hoặc tiếp tục với'}</span>
-              </div>
-
-              <div className="auth-social-grid">
-                <button type="button" className="auth-social-button">
-                  <span className="social-mark google">G</span>
-                  Google
-                </button>
-                <button type="button" className="auth-social-button">
-                  <span className="social-mark facebook">f</span>
-                  Facebook
+              <div className="auth-switch-row">
+                <span>{mode === 'login' ? "Don't have an account?" : 'Already have an account?'}</span>
+                <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+                  {mode === 'login' ? 'Create an account' : 'Log in'}
                 </button>
               </div>
             </form>
+          </div>
+        </section>
+
+        <section className="auth-visual split-visual" aria-hidden="true">
+          <div className="connect-illustration">
+            <div className="connect-orb"></div>
+            <div className="connector-line line-a"></div>
+            <div className="connector-line line-b"></div>
+            <div className="connector-node node-ai">AI</div>
+            <div className="connector-node node-toeic">T</div>
+            <div className="connector-node node-score">G</div>
+            <div className="dashboard-card">
+              <div className="dash-top">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div className="dash-row">
+                <strong></strong>
+                <span></span>
+              </div>
+              <div className="dash-row">
+                <strong></strong>
+                <span></span>
+              </div>
+              <div className="dash-row">
+                <strong></strong>
+                <span></span>
+              </div>
+            </div>
+          </div>
+          <div className="visual-copy">
+            <h2>Connect every TOEIC practice.</h2>
+            <p>Track tests, mistakes, AI feedback, and progress in one focused dashboard.</p>
+            <div className="visual-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </div>
         </section>
       </div>
