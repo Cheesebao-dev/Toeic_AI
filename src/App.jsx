@@ -442,8 +442,9 @@ function AuthGate({ error, onSubmit }) {
         <section className="auth-visual split-visual" aria-hidden="true">
           <div className="connect-illustration">
             <div className="connect-orb"></div>
-            <div className="connector-line line-a"></div>
-            <div className="connector-line line-b"></div>
+            <svg className="connector-path" viewBox="0 0 430 360" focusable="false">
+              <path d="M106 94 H166 V302 H116 M74 200 H270" />
+            </svg>
             <div className="connector-node node-integrations">
               <span className="node-grid-mark">
                 <i></i>
