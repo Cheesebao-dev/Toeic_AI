@@ -29,6 +29,10 @@ const upload = multer({
 const PORT = Number(process.env.PORT || 8787);
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_BASE_URL = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const AI_PROVIDER = (process.env.AI_PROVIDER || (OPENAI_API_KEY ? 'openai-compatible' : 'gemini')).toLowerCase();
 const JWT_SECRET = process.env.JWT_SECRET || process.env.APP_PASSWORD || 'local-dev-secret-change-me';
 const AUTH_COOKIE = 'toeic_auth';
 const LOCAL_FRONTEND_ORIGINS = ['http://127.0.0.1:5173', 'http://localhost:5173'];
@@ -114,6 +118,33 @@ async function requireAuth(req, res, next) {
 function extractGeminiText(payload) {
   const parts = payload?.candidates?.[0]?.content?.parts || [];
   return parts.map((part) => part.text || '').join('\n').trim();
+}
+
+function extractOpenAiText(payload) {
+  if (typeof payload?.output_text === 'string') return payload.output_text.trim();
+  const output = Array.isArray(payload?.output) ? payload.output : [];
+  const text = output
+    .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+    .map((part) => part?.text || part?.content || '')
+    .join('\n')
+    .trim();
+  if (text) return text;
+  return String(payload?.choices?.[0]?.message?.content || '').trim();
+}
+
+function geminiPartToOpenAiContent(part) {
+  if (part?.text) {
+    return { type: 'text', text: part.text };
+  }
+  if (part?.inline_data?.data) {
+    return {
+      type: 'image_url',
+      image_url: {
+        url: `data:${part.inline_data.mime_type || 'application/octet-stream'};base64,${part.inline_data.data}`,
+      },
+    };
+  }
+  return null;
 }
 
 function escapeControlCharactersInJsonStrings(value) {
@@ -234,6 +265,57 @@ async function callGemini({ parts, responseMimeType = 'application/json', temper
   return extractGeminiText(payload);
 }
 
+async function callOpenAiCompatible({ parts, responseMimeType = 'application/json', temperature = 0.25 }) {
+  if (!OPENAI_API_KEY) {
+    const error = new Error('Chưa cấu hình OPENAI_API_KEY trên server.');
+    error.status = 500;
+    throw error;
+  }
+
+  const content = parts.map(geminiPartToOpenAiContent).filter(Boolean);
+  const wantsJson = responseMimeType === 'application/json';
+  const body = {
+    model: OPENAI_MODEL,
+    messages: [{ role: 'user', content }],
+    temperature,
+  };
+  if (wantsJson) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const openAiMessage = payload?.error?.message || '';
+    let message = openAiMessage || `OpenAI-compatible request failed with ${response.status}`;
+    if (response.status === 401 || response.status === 403) {
+      message = 'OPENAI_API_KEY hoặc OPENAI_BASE_URL không hợp lệ.';
+    } else if (response.status === 429) {
+      message = 'AI provider đang hết quota hoặc bị giới hạn tốc độ. Vui lòng thử lại sau.';
+    }
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
+  }
+
+  return extractOpenAiText(payload);
+}
+
+function callAiModel(options) {
+  if (AI_PROVIDER === 'openai-compatible' || AI_PROVIDER === 'openai') {
+    return callOpenAiCompatible(options);
+  }
+  return callGemini(options);
+}
+
 const analysisPrompt = ({ part, userAnswer, questionText }) => `
 Bạn là trợ lý luyện thi TOEIC cho người Việt. Hãy phân tích câu hỏi TOEIC bên dưới.
 
@@ -273,8 +355,10 @@ Dữ liệu người học:
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
-    model: MODEL,
+    provider: AI_PROVIDER,
+    model: AI_PROVIDER === 'openai-compatible' || AI_PROVIDER === 'openai' ? OPENAI_MODEL : MODEL,
     hasGeminiKey: Boolean(GEMINI_API_KEY),
+    hasOpenAiKey: Boolean(OPENAI_API_KEY),
     auth: 'email-password',
     storage: getStorageMode(),
   });
@@ -407,7 +491,7 @@ Câu hỏi mới:
 ${cleanMessage}
 `;
 
-    const reply = await callGemini({
+    const reply = await callAiModel({
       parts: [{ text: prompt }],
       responseMimeType: null,
       temperature: 0.45,
@@ -433,7 +517,7 @@ app.post('/api/ai/analyze', requireAuth, upload.single('file'), async (req, res)
       });
     }
 
-    const text = await callGemini({ parts });
+    const text = await callAiModel({ parts });
     const parsed = parseJsonText(text);
     if (!parsed?.questions) {
       res.status(502).json({ error: 'AI response was not valid analysis JSON.', raw: text });
@@ -467,7 +551,7 @@ ${JSON.stringify((sessions || []).slice(-12), null, 2)}
 Open mistakes:
 ${JSON.stringify((mistakes || []).filter((item) => item.status !== 'Đã khắc phục').slice(-20), null, 2)}
 `;
-    const markdown = await callGemini({ parts: [{ text: prompt }], responseMimeType: null, temperature: 0.35 });
+    const markdown = await callAiModel({ parts: [{ text: prompt }], responseMimeType: null, temperature: 0.35 });
     if (!markdown) {
       res.status(502).json({ error: 'AI response was empty.' });
       return;
