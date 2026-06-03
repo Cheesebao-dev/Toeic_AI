@@ -344,8 +344,22 @@ function AuthGate({ error, onSubmit }) {
         <section className="access-panel">
           <div className="auth-card-body">
             <div className="split-brand-row">
-              <div className="split-logo-mark">T</div>
-              <strong>toeicwork</strong>
+              <svg className="ets-toeic-logo" viewBox="0 0 560 120" role="img" aria-label="ETS TOEIC">
+                <path
+                  className="ets-swoosh-blue"
+                  d="M26 70C45 30 105 18 173 30C136 20 70 26 35 63C10 90 30 113 80 113C121 113 164 103 196 83C156 102 88 113 49 95C30 86 23 78 26 70Z"
+                />
+                <path
+                  className="ets-swoosh-red"
+                  d="M72 33C109 5 174 8 204 38C220 54 220 73 205 91C218 61 204 35 173 24C134 11 93 17 72 33Z"
+                />
+                <text className="ets-logo-text" x="65" y="82">ETS</text>
+                <circle className="ets-reg-circle" cx="213" cy="83" r="8" />
+                <text className="ets-reg-text" x="213" y="87" textAnchor="middle">R</text>
+                <text className="toeic-logo-text" x="250" y="86">TOEIC</text>
+                <circle className="toeic-reg-circle" cx="540" cy="87" r="8" />
+                <text className="toeic-reg-text" x="540" y="91" textAnchor="middle">R</text>
+              </svg>
             </div>
 
             <div className="auth-heading">
