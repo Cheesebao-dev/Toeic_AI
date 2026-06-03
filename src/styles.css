@@ -251,34 +251,7 @@ button:disabled {
   place-items: center;
   overflow: hidden;
   padding: 18px;
-  background: #dfe5ee;
-}
-
-.access-shell::before,
-.access-shell::after {
-  position: absolute;
-  content: "";
-  inset: auto;
-  pointer-events: none;
-  background: rgba(255, 255, 255, 0.66);
-}
-
-.access-shell::before {
-  top: -20vh;
-  left: -10vw;
-  width: 62vw;
-  height: 42vh;
-  background: rgba(255, 255, 255, 0.45);
-  clip-path: polygon(0 0, 100% 0, 24% 100%, 0 64%);
-}
-
-.access-shell::after {
-  right: -12vw;
-  bottom: -18vh;
-  width: 66vw;
-  height: 46vh;
-  background: rgba(255, 255, 255, 0.38);
-  clip-path: polygon(44% 0, 100% 24%, 100% 100%, 0 100%);
+  background: radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #6366f1 100%);
 }
 
 .auth-stage {
