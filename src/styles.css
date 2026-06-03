@@ -567,40 +567,26 @@ button:disabled {
 
 .split-brand-row {
   display: block;
-  width: 258px;
+  width: 174px;
   margin-bottom: 34px;
 }
 
-.ets-toeic-logo {
+.toeic-logo {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.ets-swoosh-blue,
-.ets-logo-text,
 .toeic-logo-text,
-.ets-reg-circle,
 .toeic-reg-circle,
-.ets-reg-text,
 .toeic-reg-text {
   fill: #004b99;
 }
 
-.ets-swoosh-red {
-  fill: #b00000;
-}
-
-.ets-logo-text,
 .toeic-logo-text {
   font-family: Arial, Helvetica, sans-serif;
   font-style: italic;
   font-weight: 900;
-}
-
-.ets-logo-text {
-  font-size: 56px;
-  letter-spacing: -4px;
 }
 
 .toeic-logo-text {
@@ -608,14 +594,12 @@ button:disabled {
   letter-spacing: -5px;
 }
 
-.ets-reg-circle,
 .toeic-reg-circle {
   fill: none;
   stroke: #004b99;
   stroke-width: 2;
 }
 
-.ets-reg-text,
 .toeic-reg-text {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
