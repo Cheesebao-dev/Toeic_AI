@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   Lock,
+  Mail,
   Menu,
   NotebookTabs,
   Plus,
@@ -23,6 +24,7 @@ import {
   Target,
   Trash2,
   Upload,
+  UserRound,
   X,
 } from 'lucide-react';
 import {
@@ -335,53 +337,105 @@ function AuthGate({ error, onSubmit }) {
 
   return (
     <main className="access-shell">
-      <section className="access-panel">
-        <div className="brand-mark">T</div>
-        <h1>TOEIC Tracker</h1>
-        <p>Đăng nhập để lưu nhật ký, sổ tay lỗi sai và báo cáo AI theo tài khoản riêng.</p>
-        <div className="auth-tabs">
-          <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
-            Đăng nhập
-          </button>
-          <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
-            Đăng ký
-          </button>
-        </div>
-        <form onSubmit={submit} className="stack-form">
-          {mode === 'register' && (
-            <Field label="Tên hiển thị">
+      <div className="auth-stage">
+        <section className="auth-visual" aria-hidden="true">
+          <div className="auth-brand">
+            <div className="auth-logo-mark">T</div>
+            <div>
+              <strong>TOEIC AI Platform</strong>
+              <span>Smart Practice Tracker</span>
+            </div>
+          </div>
+
+          <div className="ai-illustration">
+            <div className="orbit orbit-one"></div>
+            <div className="orbit orbit-two"></div>
+            <div className="platform-ring"></div>
+            <div className="desk-block">
+              <div className="screen-panel">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div className="score-tile">990</div>
+            </div>
+            <div className="book-stack">
+              <span></span>
+              <span></span>
+            </div>
+            <div className="ai-chip">AI</div>
+            <div className="metric-bubble bubble-one">P5</div>
+            <div className="metric-bubble bubble-two">82%</div>
+            <div className="metric-bubble bubble-three">R</div>
+          </div>
+        </section>
+
+        <section className="access-panel">
+          <div className="auth-heading">
+            <span>{mode === 'login' ? 'Welcome back' : 'Create workspace'}</span>
+            <h1>{mode === 'login' ? 'Đăng nhập hệ thống' : 'Đăng ký tài khoản'}</h1>
+            <div className="heading-line"></div>
+          </div>
+
+          <div className="auth-tabs">
+            <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
+              Đăng nhập
+            </button>
+            <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
+              Đăng ký
+            </button>
+          </div>
+
+          <form onSubmit={submit} className="auth-form">
+            {mode === 'register' && (
+              <label className="auth-input">
+                <UserRound size={18} />
+                <input
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  autoFocus
+                  placeholder="Tên hiển thị"
+                  autoComplete="name"
+                />
+              </label>
+            )}
+            <label className="auth-input">
+              <Mail size={18} />
               <input
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                autoFocus
-                placeholder="Bao"
+                type="email"
+                value={form.email}
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
+                autoFocus={mode === 'login'}
+                placeholder="Email đăng nhập"
+                autoComplete="email"
               />
-            </Field>
-          )}
-          <Field label="Email">
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
-              autoFocus={mode === 'login'}
-              placeholder="you@example.com"
-            />
-          </Field>
-          <Field label="Mật khẩu">
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              placeholder="Ít nhất 6 ký tự"
-            />
-          </Field>
-          {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-          <button className="primary-button" type="submit">
-            <Lock size={18} />
-            {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-          </button>
-        </form>
-      </section>
+            </label>
+            <label className="auth-input">
+              <Lock size={18} />
+              <input
+                type="password"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                placeholder="Mật khẩu"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+            </label>
+
+            <div className="auth-meta-row">
+              <label>
+                <input type="checkbox" defaultChecked />
+                <span>Ghi nhớ đăng nhập</span>
+              </label>
+              <span>TOEIC Tracker AI</span>
+            </div>
+
+            {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
+            <button className="auth-submit" type="submit">
+              {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
+            </button>
+          </form>
+        </section>
+      </div>
     </main>
   );
 }
