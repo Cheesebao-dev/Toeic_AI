@@ -784,6 +784,10 @@ button:disabled {
   will-change: transform;
 }
 
+.auth-slide-track.resetting {
+  transition: none;
+}
+
 .auth-visual-slide {
   display: grid;
   min-width: 0;

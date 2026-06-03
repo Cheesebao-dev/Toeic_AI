@@ -123,6 +123,8 @@ const AUTH_VISUAL_SLIDES = [
     description: 'Compare scores, accuracy, weak parts, and study minutes after each test.',
   },
 ];
+const AUTH_LOOP_SLIDES = [...AUTH_VISUAL_SLIDES, { ...AUTH_VISUAL_SLIDES[0], id: 'practice-loop' }];
+const AUTH_SLIDE_INTERVAL_MS = 5000;
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -488,14 +490,24 @@ function AuthGate({ error, onSubmit }) {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [visualIndex, setVisualIndex] = useState(0);
+  const [isVisualResetting, setIsVisualResetting] = useState(false);
+  const activeVisualIndex = visualIndex === AUTH_VISUAL_SLIDES.length ? 0 : visualIndex;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setVisualIndex((current) => (current + 1) % AUTH_VISUAL_SLIDES.length);
-    }, 3000);
+      setVisualIndex((current) => Math.min(current + 1, AUTH_VISUAL_SLIDES.length));
+    }, AUTH_SLIDE_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
   }, []);
+
+  function handleVisualTransitionEnd() {
+    if (visualIndex !== AUTH_VISUAL_SLIDES.length) return;
+
+    setIsVisualResetting(true);
+    setVisualIndex(0);
+    window.setTimeout(() => setIsVisualResetting(false), 40);
+  }
 
   function submit(event) {
     event.preventDefault();
@@ -588,8 +600,12 @@ function AuthGate({ error, onSubmit }) {
 
         <section className="auth-visual split-visual" aria-hidden="true">
           <div className="auth-slide-viewport">
-            <div className="auth-slide-track" style={{ transform: `translateX(-${visualIndex * 100}%)` }}>
-              {AUTH_VISUAL_SLIDES.map((slide) => (
+            <div
+              className={`auth-slide-track ${isVisualResetting ? 'resetting' : ''}`}
+              onTransitionEnd={handleVisualTransitionEnd}
+              style={{ transform: `translateX(-${visualIndex * 100}%)` }}
+            >
+              {AUTH_LOOP_SLIDES.map((slide) => (
                 <article className={`auth-visual-slide ${slide.kind}`} key={slide.id}>
                   <AuthVisualArtwork slide={slide} />
                   <div className="visual-copy">
@@ -602,7 +618,7 @@ function AuthGate({ error, onSubmit }) {
           </div>
           <div className="visual-dots">
             {AUTH_VISUAL_SLIDES.map((slide, index) => (
-              <span className={index === visualIndex ? 'active' : ''} key={slide.id}></span>
+              <span className={index === activeVisualIndex ? 'active' : ''} key={slide.id}></span>
             ))}
           </div>
         </section>
