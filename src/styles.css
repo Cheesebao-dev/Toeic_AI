@@ -832,56 +832,57 @@ button:disabled {
 
 .split-visual {
   position: relative;
-  display: grid;
-  align-content: center;
-  justify-items: center;
+  display: block;
   min-height: 720px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 37%, rgba(34, 211, 238, 0.2), transparent 31%),
-    linear-gradient(135deg, #0f65dc, #0d60d7 58%, #0b58cf);
+    radial-gradient(circle at 46% 33%, rgba(34, 211, 238, 0.18), transparent 32%),
+    linear-gradient(135deg, #1269dc, #0f63d7 58%, #0b5acd);
 }
 
 .split-visual::before {
   position: absolute;
   content: "";
-  width: 382px;
-  height: 382px;
-  top: 118px;
+  width: 385px;
+  height: 385px;
+  top: 86px;
   left: 50%;
   transform: translateX(-49%);
-  background: rgba(56, 189, 248, 0.14);
+  background: rgba(56, 189, 248, 0.13);
   border-radius: 50%;
 }
 
 .split-visual::after {
   position: absolute;
   content: "";
-  width: 306px;
-  height: 306px;
-  top: 155px;
+  width: 308px;
+  height: 308px;
+  top: 124px;
   left: 50%;
   transform: translateX(-49%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
 }
 
 .connect-illustration {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  width: 430px;
-  height: 360px;
-  margin-top: 24px;
+  top: 58px;
+  left: 50%;
+  width: 475px;
+  height: 390px;
+  margin: 0;
+  transform: translateX(-50%);
 }
 
 .connect-orb {
   position: absolute;
-  left: 86px;
-  top: 118px;
-  width: 174px;
-  height: 174px;
-  border: 24px solid rgba(147, 197, 253, 0.24);
-  border-radius: 34px;
+  left: 118px;
+  top: 156px;
+  width: 92px;
+  height: 166px;
+  border: 22px solid rgba(147, 197, 253, 0.3);
+  border-radius: 18px;
 }
 
 .connector-line {
@@ -892,15 +893,15 @@ button:disabled {
 }
 
 .line-a {
-  left: 54px;
-  top: 198px;
-  width: 236px;
+  left: 74px;
+  top: 246px;
+  width: 158px;
   height: 22px;
 }
 
 .line-b {
-  left: 167px;
-  top: 110px;
+  left: 176px;
+  top: 156px;
   width: 22px;
   height: 210px;
 }
@@ -924,18 +925,18 @@ button:disabled {
 }
 
 .node-ai {
-  left: 36px;
-  top: 162px;
+  left: 43px;
+  top: 210px;
 }
 
 .node-toeic {
-  left: 82px;
-  top: 70px;
+  left: 90px;
+  top: 116px;
 }
 
 .node-score {
-  left: 92px;
-  top: 270px;
+  left: 100px;
+  top: 318px;
   color: #4285f4;
 }
 
@@ -989,10 +990,10 @@ button:disabled {
 .dashboard-card {
   position: absolute;
   z-index: 4;
-  right: -2px;
-  top: 72px;
+  left: 220px;
+  top: 118px;
   width: 220px;
-  min-height: 226px;
+  height: 258px;
   padding: 14px;
   background: #ffffff;
   border-radius: 9px;
@@ -1129,10 +1130,14 @@ button:disabled {
 }
 
 .visual-copy {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  max-width: 390px;
-  margin-top: 14px;
+  left: 50%;
+  top: 424px;
+  width: min(100% - 56px, 430px);
+  max-width: 430px;
+  margin: 0;
+  transform: translateX(-50%);
   color: #ffffff;
   text-align: center;
 }
