@@ -14,6 +14,7 @@ import {
   EyeOff,
   FileText,
   Filter,
+  History,
   LayoutDashboard,
   LogOut,
   Lock,
@@ -294,6 +295,7 @@ function getReadableMarkdownText(markdown) {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
 function MarkdownReport({ markdown, compact = false, animated = false, onAnimationEnd }) {
   const visibleMarkdown = useTypewriterText(markdown, animated, {
     step: compact ? 6 : 5,
@@ -391,6 +393,82 @@ function MarkdownReport({ markdown, compact = false, animated = false, onAnimati
       {animated && <i className="typewriter-caret markdown-caret" aria-hidden="true" />}
     </div>
   );
+}
+
+function cleanReportLine(line) {
+  return String(line || '')
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/^\s*[-*]\s+/, '')
+    .replace(/^\s*\d+[.)]\s+/, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/[`_]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getReportTitle(markdown) {
+  const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+  const heading = lines.find((line) => /^#{1,6}\s+\S/.test(line.trim()));
+  const firstLine = heading || lines.find((line) => cleanReportLine(line));
+  const title = cleanReportLine(firstLine);
+
+  return title || 'Báo cáo học tập';
+}
+
+function getReportSummary(markdown) {
+  const title = getReportTitle(markdown);
+  const summary = String(markdown || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => ({ raw: line.trim(), text: cleanReportLine(line) }))
+    .filter((line) => line.text && line.text !== title && !/^#{1,6}\s+/.test(line.raw) && !/^-{3,}$/.test(line.raw))
+    .map((line) => line.text)
+    .slice(0, 3)
+    .join(' ');
+
+  return summary || 'Chưa có nội dung tóm tắt.';
+}
+
+function getLocalDateKey(date = new Date()) {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+
+  return local.toISOString().slice(0, 10);
+}
+
+function getReportDateKey(report) {
+  if (report?.createdDate) return report.createdDate;
+  if (report?.createdAtIso) return getLocalDateKey(report.createdAtIso);
+
+  const createdAt = String(report?.createdAt || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(createdAt)) return createdAt;
+
+  const vietnameseDate = createdAt.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (vietnameseDate) {
+    const [, day, month, year] = vietnameseDate;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  return getLocalDateKey(createdAt);
+}
+
+function isReportToday(report) {
+  return getReportDateKey(report) === getLocalDateKey();
+}
+
+function formatReportTimestamp(date) {
+  return date.toLocaleString('vi-VN');
+}
+
+function getReportDayLabel(report) {
+  if (isReportToday(report)) return 'Hôm nay';
+
+  const dateKey = getReportDateKey(report);
+  if (!dateKey) return 'Không rõ ngày';
+
+  const [year, month, day] = dateKey.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 function numberValue(value) {
@@ -956,6 +1034,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
     { id: 'mistakes', label: 'Sổ lỗi sai', detail: 'Review câu sai', icon: NotebookTabs },
     { id: 'ai', label: 'AI phân tích', detail: 'Gemini feedback', icon: Sparkles },
     { id: 'reports', label: 'Báo cáo', detail: 'Tiến độ học', icon: FileText },
+    { id: 'reportHistory', label: 'Lịch sử báo cáo', detail: 'Đọc lại báo cáo', icon: History },
   ];
   const displayName = user?.name || user?.email || 'TOEIC user';
   const accountLabel = user?.email || 'Tài khoản cá nhân';
@@ -2097,6 +2176,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
   const [error, setError] = useState('');
   const [writingReportId, setWritingReportId] = useState(null);
   const isWritingReport = Boolean(writingReportId);
+  const todaysReport = reports.find(isReportToday);
 
   async function generateReport() {
     setLoading(true);
@@ -2111,7 +2191,14 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
       });
       const data = await readJsonResponse(response);
       if (!response.ok) throw new Error(data.error || 'Không tạo được báo cáo');
-      const nextReport = { id: uid(), markdown: data.markdown, createdAt: new Date().toLocaleString('vi-VN') };
+      const now = new Date();
+      const nextReport = {
+        id: uid(),
+        markdown: data.markdown,
+        createdAt: formatReportTimestamp(now),
+        createdAtIso: now.toISOString(),
+        createdDate: getLocalDateKey(now),
+      };
       setReports((current) => [nextReport, ...current]);
       setWritingReportId(nextReport.id);
     } catch (err) {
@@ -2123,44 +2210,110 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
 
   return (
     <div className="page-grid">
-      <section className="panel wide">
+      <section className="panel wide today-report-panel">
         <div className="panel-heading">
-          <h2>Báo cáo AI</h2>
+          <div>
+            <h2>Báo cáo hôm nay</h2>
+            <span>{getLocalDateKey().split('-').reverse().join('/')}</span>
+          </div>
           <button className="primary-button" onClick={generateReport} disabled={loading || isWritingReport}>
             <Sparkles size={18} />
             {loading ? 'Đang tạo...' : isWritingReport ? 'Đang viết...' : 'Tạo báo cáo'}
           </button>
         </div>
         {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-        {reports[0] ? (
+        {todaysReport ? (
           <MarkdownReport
-            markdown={reports[0].markdown}
-            animated={reports[0].id === writingReportId}
-            onAnimationEnd={() => setWritingReportId((current) => (current === reports[0].id ? null : current))}
+            markdown={todaysReport.markdown}
+            animated={todaysReport.id === writingReportId}
+            onAnimationEnd={() => setWritingReportId((current) => (current === todaysReport.id ? null : current))}
           />
         ) : (
-          <EmptyState title="Chưa có báo cáo" />
+          <EmptyState title="Chưa có báo cáo hôm nay" />
         )}
       </section>
+    </div>
+  );
+}
 
-      <section className="panel wide">
+function ReportHistory({ reports, setReports }) {
+  const [selectedId, setSelectedId] = useState('');
+  const selectedReport = reports.find((report) => report.id === selectedId) || reports[0];
+  const todayCount = reports.filter(isReportToday).length;
+
+  useEffect(() => {
+    if (!reports.length) {
+      setSelectedId('');
+      return;
+    }
+
+    if (!selectedId || !reports.some((report) => report.id === selectedId)) {
+      setSelectedId(reports[0].id);
+    }
+  }, [reports, selectedId]);
+
+  function deleteReport(reportId) {
+    setReports((current) => current.filter((report) => report.id !== reportId));
+  }
+
+  if (!reports.length) {
+    return (
+      <div className="page-grid">
+        <section className="panel wide report-history-panel">
+          <div className="panel-heading">
+            <h2>Lịch sử báo cáo</h2>
+            <span>0 bản</span>
+          </div>
+          <EmptyState title="Chưa có lịch sử báo cáo" />
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="report-history-page">
+      <section className="panel report-history-index-panel">
         <div className="panel-heading">
           <h2>Lịch sử báo cáo</h2>
-          <span>{reports.length} bản</span>
+          <span>{reports.length} bản · {todayCount} hôm nay</span>
         </div>
-        <div className="record-list compact">
-          {reports.slice(1).map((report) => (
-            <article className="record-card" key={report.id}>
-              <div className="record-main">
-                <strong>{report.createdAt}</strong>
-                <IconButton title="Xóa" className="danger" onClick={() => setReports((current) => current.filter((item) => item.id !== report.id))}>
-                  <Trash2 size={17} />
-                </IconButton>
-              </div>
-              <MarkdownReport markdown={report.markdown} compact />
-            </article>
+        <div className="report-history-index-list">
+          {reports.map((report) => (
+            <button
+              className={`report-history-item ${selectedReport?.id === report.id ? 'is-active' : ''}`}
+              key={report.id}
+              type="button"
+              onClick={() => setSelectedId(report.id)}
+              aria-pressed={selectedReport?.id === report.id}
+            >
+              <span className="report-history-item-meta">
+                <span>{getReportDayLabel(report)}</span>
+                <small>{report.createdAt || getReportDayLabel(report)}</small>
+              </span>
+              <strong>{getReportTitle(report.markdown)}</strong>
+              <small>{getReportSummary(report.markdown)}</small>
+            </button>
           ))}
         </div>
+      </section>
+
+      <section className="panel report-history-reader">
+        {selectedReport ? (
+          <>
+            <div className="panel-heading report-history-reader-head">
+              <div>
+                <h2>{getReportTitle(selectedReport.markdown)}</h2>
+                <span>{selectedReport.createdAt || getReportDayLabel(selectedReport)}</span>
+              </div>
+              <IconButton title="Xóa" className="danger" onClick={() => deleteReport(selectedReport.id)}>
+                <Trash2 size={17} />
+              </IconButton>
+            </div>
+            <MarkdownReport markdown={selectedReport.markdown} />
+          </>
+        ) : (
+          <EmptyState title="Chọn một báo cáo để đọc" />
+        )}
       </section>
     </div>
   );
@@ -2613,6 +2766,12 @@ export default function App() {
             setReports={setReports}
           />
         )}
+        {activeTab === 'reportHistory' && (
+          <ReportHistory
+            reports={data.reports}
+            setReports={setReports}
+          />
+        )}
       </main>
       <AssistantWidget
         stats={stats}
@@ -2621,7 +2780,7 @@ export default function App() {
         activeTab={activeTab}
         hasGeminiKey={backend.hasGeminiKey}
         onAuthExpired={() => {
-          setAuth({ checked: true, user: null, error: 'B\u1ea1n c\u1ea7n \u0111\u0103ng nh\u1eadp l\u1ea1i \u0111\u1ec3 d\u00f9ng tr\u1ee3 l\u00fd AI.', loading: false });
+          setAuth({ checked: true, user: null, error: 'Bạn cần đăng nhập lại để dùng trợ lý AI.', loading: false });
           setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
         }}
       />
