@@ -6,11 +6,13 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Cloud,
   Download,
   Edit3,
   FileText,
   Filter,
   LayoutDashboard,
+  Lock,
   Menu,
   NotebookTabs,
   Plus,
@@ -38,6 +40,7 @@ import {
 } from 'recharts';
 
 const STORAGE_KEY = 'toeic-tracker-ai-state-v1';
+const ACCESS_PASSWORD_KEY = 'toeic-tracker-ai-app-password';
 
 const PARTS = [
   { id: 'Part 1', skill: 'Listening' },
@@ -282,6 +285,21 @@ function loadState() {
   }
 }
 
+function loadStoredPassword() {
+  try {
+    return sessionStorage.getItem(ACCESS_PASSWORD_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function apiHeaders(appPassword, extra = {}) {
+  return {
+    ...extra,
+    ...(appPassword ? { 'x-app-password': appPassword } : {}),
+  };
+}
+
 function StatCard({ icon: Icon, label, value, detail, tone = 'blue' }) {
   return (
     <section className={`stat-card tone-${tone}`}>
@@ -304,6 +322,41 @@ function EmptyState({ title, action }) {
       <strong>{title}</strong>
       {action}
     </div>
+  );
+}
+
+function AccessGate({ error, onUnlock }) {
+  const [password, setPassword] = useState('');
+
+  function submit(event) {
+    event.preventDefault();
+    onUnlock(password);
+  }
+
+  return (
+    <main className="access-shell">
+      <section className="access-panel">
+        <div className="brand-mark">T</div>
+        <h1>TOEIC Tracker</h1>
+        <p>Dữ liệu backend và AI API đang được bảo vệ bằng mật khẩu ứng dụng.</p>
+        <form onSubmit={submit} className="stack-form">
+          <Field label="Mật khẩu ứng dụng">
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoFocus
+              placeholder="Nhập APP_PASSWORD"
+            />
+          </Field>
+          {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
+          <button className="primary-button" type="submit">
+            <Lock size={18} />
+            Mở ứng dụng
+          </button>
+        </form>
+      </section>
+    </main>
   );
 }
 
@@ -902,7 +955,7 @@ function Mistakes({ mistakes, setMistakes, initialDraft }) {
   );
 }
 
-function AIAnalyzer({ onSaveMistake }) {
+function AIAnalyzer({ appPassword, onSaveMistake }) {
   const [form, setForm] = useState({ part: 'Part 5', userAnswer: '', questionText: '' });
   const [file, setFile] = useState(null);
   const [results, setResults] = useState([]);
@@ -920,7 +973,11 @@ function AIAnalyzer({ onSaveMistake }) {
       payload.append('userAnswer', form.userAnswer);
       payload.append('questionText', form.questionText);
       if (file) payload.append('file', file);
-      const response = await fetch('/api/ai/analyze', { method: 'POST', body: payload });
+      const response = await fetch('/api/ai/analyze', {
+        method: 'POST',
+        headers: apiHeaders(appPassword),
+        body: payload,
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không phân tích được');
       setResults(data.questions || []);
@@ -1054,7 +1111,7 @@ function AIAnalyzer({ onSaveMistake }) {
   );
 }
 
-function Reports({ stats, sessions, mistakes, reports, setReports }) {
+function Reports({ appPassword, stats, sessions, mistakes, reports, setReports }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -1064,7 +1121,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
     try {
       const response = await fetch('/api/ai/report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(appPassword, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ stats, sessions, mistakes }),
       });
       const data = await response.json();
@@ -1119,11 +1176,126 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsed, setCollapsed] = useState(false);
   const [aiDraft, setAiDraft] = useState(null);
+  const [appPassword, setAppPassword] = useState(loadStoredPassword);
+  const [backend, setBackend] = useState({
+    checked: false,
+    requiresPassword: false,
+    syncEnabled: false,
+    saving: false,
+    storage: 'local',
+    error: '',
+  });
   const importRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+
+    if (!backend.syncEnabled) return undefined;
+
+    const timer = window.setTimeout(async () => {
+      setBackend((current) => ({ ...current, saving: true, error: '' }));
+      try {
+        const response = await fetch('/api/data', {
+          method: 'PUT',
+          headers: apiHeaders(appPassword, { 'Content-Type': 'application/json' }),
+          body: JSON.stringify(data),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          sessionStorage.removeItem(ACCESS_PASSWORD_KEY);
+          setAppPassword('');
+          throw new Error('Mật khẩu ứng dụng không đúng.');
+        }
+        if (!response.ok) throw new Error(payload.error || 'Không lưu được dữ liệu backend.');
+        setBackend((current) => ({ ...current, saving: false, error: '' }));
+      } catch (error) {
+        setBackend((current) => ({ ...current, saving: false, error: error.message }));
+      }
+    }, 650);
+
+    return () => window.clearTimeout(timer);
+  }, [data, backend.syncEnabled, appPassword]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBackendData() {
+      try {
+        const healthResponse = await fetch('/api/health');
+        const health = await healthResponse.json();
+
+        if (cancelled) return;
+
+        if (health.requiresPassword && !appPassword) {
+          setBackend({
+            checked: true,
+            requiresPassword: true,
+            syncEnabled: false,
+            saving: false,
+            storage: health.storage || 'backend',
+            error: '',
+          });
+          return;
+        }
+
+        const dataResponse = await fetch('/api/data', {
+          headers: apiHeaders(appPassword),
+        });
+        const payload = await dataResponse.json().catch(() => ({}));
+
+        if (cancelled) return;
+
+        if (dataResponse.status === 401) {
+          sessionStorage.removeItem(ACCESS_PASSWORD_KEY);
+          setAppPassword('');
+          setBackend({
+            checked: true,
+            requiresPassword: true,
+            syncEnabled: false,
+            saving: false,
+            storage: health.storage || 'backend',
+            error: 'Mật khẩu ứng dụng không đúng.',
+          });
+          return;
+        }
+
+        if (!dataResponse.ok) throw new Error(payload.error || 'Không tải được dữ liệu backend.');
+
+        const remoteState = {
+          sessions: Array.isArray(payload.sessions) ? payload.sessions : [],
+          mistakes: Array.isArray(payload.mistakes) ? payload.mistakes : [],
+          reports: Array.isArray(payload.reports) ? payload.reports : [],
+        };
+
+        setData(remoteState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState));
+        setBackend({
+          checked: true,
+          requiresPassword: Boolean(health.requiresPassword),
+          syncEnabled: true,
+          saving: false,
+          storage: health.storage || 'backend',
+          error: '',
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setBackend({
+            checked: true,
+            requiresPassword: false,
+            syncEnabled: false,
+            saving: false,
+            storage: 'local',
+            error: `Backend chưa sẵn sàng: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    loadBackendData();
+    return () => {
+      cancelled = true;
+    };
+  }, [appPassword]);
 
   const stats = useMemo(() => calculateStats(data.sessions, data.mistakes), [data.sessions, data.mistakes]);
 
@@ -1181,6 +1353,17 @@ export default function App() {
     reports: 'Báo cáo',
   };
 
+  function unlockApp(password) {
+    const trimmed = password.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem(ACCESS_PASSWORD_KEY, trimmed);
+    setAppPassword(trimmed);
+  }
+
+  if (backend.requiresPassword && !appPassword) {
+    return <AccessGate error={backend.error} onUnlock={unlockApp} />;
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -1200,11 +1383,18 @@ export default function App() {
             <h1>{titleMap[activeTab]}</h1>
           </div>
           <div className="topbar-summary">
+            <span className={backend.syncEnabled ? 'sync-pill ok' : 'sync-pill'}>
+              <Cloud size={15} />
+              {backend.syncEnabled ? `BE: ${backend.storage}` : 'Local cache'}
+            </span>
+            {backend.saving && <span>Đang lưu...</span>}
             <span>{stats.totalQuestions} câu</span>
             <span>{stats.accuracy}% accuracy</span>
             <span>{stats.openMistakes} lỗi mở</span>
           </div>
         </header>
+
+        {backend.error && <div className="sync-warning">{backend.error}</div>}
 
         {activeTab === 'overview' && (
           <Overview
@@ -1217,9 +1407,10 @@ export default function App() {
         )}
         {activeTab === 'journal' && <Journal sessions={data.sessions} setSessions={setSessions} />}
         {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} initialDraft={aiDraft} />}
-        {activeTab === 'ai' && <AIAnalyzer onSaveMistake={saveAIMistake} />}
+        {activeTab === 'ai' && <AIAnalyzer appPassword={appPassword} onSaveMistake={saveAIMistake} />}
         {activeTab === 'reports' && (
           <Reports
+            appPassword={appPassword}
             stats={stats}
             sessions={data.sessions}
             mistakes={data.mistakes}

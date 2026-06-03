@@ -188,11 +188,68 @@ button:disabled {
   display: inline-flex;
   min-height: 34px;
   align-items: center;
+  gap: 6px;
   padding: 0 12px;
   color: #0f172a;
   background: white;
   border: 1px solid var(--line);
   border-radius: 999px;
+}
+
+.sync-pill {
+  color: #475569 !important;
+}
+
+.sync-pill.ok {
+  color: #047857 !important;
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.sync-warning {
+  max-width: 1440px;
+  margin: -8px auto 16px;
+  padding: 10px 12px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+}
+
+.access-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(8, 13, 25, 0.08)),
+    #f3f6fb;
+}
+
+.access-panel {
+  width: min(100%, 430px);
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.access-panel .brand-mark {
+  margin-bottom: 4px;
+}
+
+.access-panel h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.access-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .page-grid,
@@ -880,4 +937,3 @@ textarea:focus {
     gap: 6px;
   }
 }
-

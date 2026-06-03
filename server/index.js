@@ -2,8 +2,13 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import multer from 'multer';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { getStorageMode, readState, writeState } from './storage.js';
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distPath = path.resolve(__dirname, '..', 'dist');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
@@ -12,9 +17,24 @@ const upload = multer({
 const PORT = Number(process.env.PORT || 8787);
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const APP_PASSWORD = process.env.APP_PASSWORD || '';
 
 app.use(cors({ origin: ['http://127.0.0.1:5173', 'http://localhost:5173'] }));
 app.use(express.json({ limit: '2mb' }));
+
+function requireAppAccess(req, res, next) {
+  if (!APP_PASSWORD) {
+    next();
+    return;
+  }
+
+  if (req.get('x-app-password') === APP_PASSWORD) {
+    next();
+    return;
+  }
+
+  res.status(401).json({ error: 'App password required.' });
+}
 
 function extractGeminiText(payload) {
   const parts = payload?.candidates?.[0]?.content?.parts || [];
@@ -107,10 +127,28 @@ app.get('/api/health', (_req, res) => {
     ok: true,
     model: MODEL,
     hasGeminiKey: Boolean(GEMINI_API_KEY),
+    requiresPassword: Boolean(APP_PASSWORD),
+    storage: getStorageMode(),
   });
 });
 
-app.post('/api/ai/analyze', upload.single('file'), async (req, res) => {
+app.get('/api/data', requireAppAccess, async (_req, res) => {
+  try {
+    res.json(await readState());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/data', requireAppAccess, async (req, res) => {
+  try {
+    res.json(await writeState(req.body));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ai/analyze', requireAppAccess, upload.single('file'), async (req, res) => {
   try {
     const { part, userAnswer, questionText } = req.body;
     const parts = [{ text: analysisPrompt({ part, userAnswer, questionText }) }];
@@ -136,7 +174,7 @@ app.post('/api/ai/analyze', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/api/ai/report', async (req, res) => {
+app.post('/api/ai/report', requireAppAccess, async (req, res) => {
   try {
     const { stats, sessions, mistakes } = req.body;
     const prompt = `
@@ -169,7 +207,16 @@ ${JSON.stringify((mistakes || []).filter((item) => item.status !== 'Đã khắc 
   }
 });
 
+app.use(express.static(distPath));
+
+app.get(/.*/, (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    next();
+    return;
+  }
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`TOEIC AI backend listening on http://127.0.0.1:${PORT}`);
 });
-
