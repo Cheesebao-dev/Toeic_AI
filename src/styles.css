@@ -3036,20 +3036,6 @@ textarea:focus {
   border-color: rgba(255, 255, 255, 0.72);
 }
 
-.kpi-wave {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 50px;
-  opacity: 0.8;
-  background:
-    radial-gradient(ellipse at 18% 75%, rgba(74, 166, 217, 0.18) 0 34%, transparent 35%),
-    radial-gradient(ellipse at 58% 70%, rgba(223, 77, 141, 0.18) 0 38%, transparent 39%),
-    radial-gradient(ellipse at 88% 75%, rgba(34, 167, 131, 0.16) 0 34%, transparent 35%),
-    linear-gradient(180deg, transparent, rgba(253, 232, 243, 0.92));
-}
-
 .overview-report-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.34fr) minmax(340px, 0.66fr);
@@ -3446,32 +3432,27 @@ textarea:focus {
 .assistant-fab,
 .assistant-panel,
 .assistant-close,
-.assistant-suggestions button,
 .assistant-input-row button {
   pointer-events: auto;
 }
 
 .assistant-fab {
   display: grid;
-  width: 62px;
-  height: 62px;
+  width: 52px;
+  height: 52px;
   place-items: center;
   color: #ffffff;
   background:
     linear-gradient(135deg, #e85d9c, #c64486 58%, #7b6ff1);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  border: 0;
   border-radius: 50%;
-  box-shadow:
-    0 18px 38px rgba(191, 55, 111, 0.28),
-    0 0 0 9px rgba(253, 232, 243, 0.82);
+  box-shadow: 0 12px 26px rgba(191, 55, 111, 0.24);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .assistant-fab:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 22px 44px rgba(191, 55, 111, 0.32),
-    0 0 0 10px rgba(253, 232, 243, 0.9);
+  box-shadow: 0 16px 30px rgba(191, 55, 111, 0.28);
 }
 
 .assistant-panel {
@@ -3542,39 +3523,6 @@ textarea:focus {
 .assistant-close:hover {
   color: #bf376f;
   background: #fff0f7;
-}
-
-.assistant-suggestions {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 0 18px 14px;
-  scrollbar-width: none;
-}
-
-.assistant-suggestions::-webkit-scrollbar {
-  display: none;
-}
-
-.assistant-suggestions button {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  flex: 0 0 auto;
-  padding: 0 12px;
-  color: #5c4a62;
-  background: #fffafd;
-  border: 1px solid #f0dce7;
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(143, 74, 112, 0.07);
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.assistant-suggestions button:hover {
-  color: #bf376f;
-  background: #fff2f8;
-  border-color: #efc5dc;
 }
 
 .assistant-messages {
@@ -3801,7 +3749,6 @@ body::before {
 .topbar-summary span,
 .overview-chip-button,
 .assistant-close,
-.assistant-suggestions button,
 .assistant-input-row input {
   background: #ffffff;
   border-color: #e2e8f0;
@@ -3816,7 +3763,6 @@ body::before {
 .sidebar-tools button:hover,
 .ghost-button:hover,
 .icon-button:hover,
-.assistant-suggestions button:hover,
 .overview-chip-button:hover {
   color: #1d4ed8;
   background: #eff6ff;
@@ -4058,16 +4004,7 @@ textarea:focus,
   background: #111827;
 }
 
-.kpi-wave {
-  background:
-    radial-gradient(ellipse at 18% 75%, rgba(14, 165, 233, 0.13) 0 34%, transparent 35%),
-    radial-gradient(ellipse at 58% 70%, rgba(37, 99, 235, 0.13) 0 38%, transparent 39%),
-    radial-gradient(ellipse at 88% 75%, rgba(16, 185, 129, 0.12) 0 34%, transparent 35%),
-    linear-gradient(180deg, transparent, rgba(241, 245, 249, 0.95));
-}
-
 .overview-chip-button,
-.assistant-suggestions button,
 .assistant-close {
   color: #475569;
 }

@@ -8,7 +8,6 @@ import {
   ChevronDown,
   CheckCircle2,
   ClipboardList,
-  Cloud,
   Download,
   Edit3,
   Eye,
@@ -962,7 +961,6 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           <span>Lỗi đang mở</span>
           <strong>{stats.openMistakes}</strong>
           <small>Top lỗi: {stats.topMistakeType}</small>
-          <div className="kpi-wave" aria-hidden="true"></div>
         </article>
       </section>
 
@@ -1819,8 +1817,6 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
   ]);
   const listRef = useRef(null);
 
-  const suggestions = ['Tôi nên luyện Part nào?', 'Lập kế hoạch 7 ngày', 'Cách ghi lỗi sai hiệu quả'];
-
   useEffect(() => {
     if (!open) return;
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -1914,14 +1910,6 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
             </button>
           </div>
 
-          <div className="assistant-suggestions">
-            {suggestions.map((suggestion) => (
-              <button type="button" key={suggestion} onClick={() => sendMessage(suggestion)} disabled={loading}>
-                {suggestion}
-              </button>
-            ))}
-          </div>
-
           <div className="assistant-messages" ref={listRef}>
             {messages.map((message) => (
               <article className={`assistant-message ${message.role}`} key={message.id}>
@@ -1950,7 +1938,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
       )}
 
       <button type="button" className="assistant-fab" onClick={() => setOpen((current) => !current)} aria-label="Mở trợ lý ảo">
-        {open ? <X size={24} /> : <MessageCircle size={25} />}
+        {open ? <X size={22} /> : <MessageCircle size={22} />}
       </button>
     </div>
   );
@@ -2138,14 +2126,6 @@ export default function App() {
     }
   }
 
-  const titleMap = {
-    overview: 'Tổng quan',
-    journal: 'Nhật ký',
-    mistakes: 'Sổ tay lỗi sai',
-    ai: 'AI phân tích',
-    reports: 'Báo cáo',
-  };
-
   async function handleAuthSubmit(mode, form) {
     setAuth((current) => ({ ...current, loading: true, error: '' }));
     try {
@@ -2203,24 +2183,6 @@ export default function App() {
       <input ref={importRef} className="hidden-input" type="file" accept="application/json" onChange={importData} />
 
       <main className="main-area">
-        <header className="topbar">
-          <div>
-            <span>TOEIC 990 Workspace</span>
-            <h1>{titleMap[activeTab]}</h1>
-          </div>
-          <div className="topbar-summary">
-            <span className="user-pill">{auth.user.name || auth.user.email}</span>
-            <span className={backend.syncEnabled ? 'sync-pill ok' : 'sync-pill'}>
-              <Cloud size={15} />
-              {backend.syncEnabled ? `BE: ${backend.storage}` : 'Local cache'}
-            </span>
-            {backend.saving && <span>Đang lưu...</span>}
-            <span>{stats.totalQuestions} câu</span>
-            <span>{stats.accuracy}% accuracy</span>
-            <span>{stats.openMistakes} lỗi mở</span>
-          </div>
-        </header>
-
         {backend.error && <div className="sync-warning">{backend.error}</div>}
 
         {activeTab === 'overview' && (
