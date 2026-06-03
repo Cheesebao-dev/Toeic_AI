@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   BarChart3,
+  Bot,
   Brain,
   CalendarDays,
   ChevronDown,
@@ -19,10 +20,12 @@ import {
   Lock,
   Mail,
   Menu,
+  MessageCircle,
   NotebookTabs,
   Plus,
   Save,
   Search,
+  Send,
   Sparkles,
   Target,
   Trash2,
@@ -1764,6 +1767,156 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
   );
 }
 
+function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState(() => [
+    {
+      id: uid(),
+      role: 'assistant',
+      content: 'Chào bạn, mình là trợ lý TOEIC AI. Bạn có thể hỏi về cách luyện đề, sửa lỗi sai, kế hoạch học, hoặc cách dùng app.',
+    },
+  ]);
+  const listRef = useRef(null);
+
+  const suggestions = ['Tôi nên luyện Part nào?', 'Lập kế hoạch 7 ngày', 'Cách ghi lỗi sai hiệu quả'];
+
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, open]);
+
+  async function sendMessage(overrideText) {
+    const text = String(overrideText || input).trim();
+    if (!text || loading) return;
+
+    const userMessage = { id: uid(), role: 'user', content: text };
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const context = {
+        activeTab,
+        stats,
+        recentSessions: sessions.slice(0, 5).map((session) => ({
+          date: session.date,
+          title: session.title,
+          mode: session.mode,
+          durationMinutes: session.durationMinutes,
+          focus: session.focus,
+        })),
+        openMistakes: mistakes
+          .filter((item) => item.status !== 'Đã khắc phục')
+          .slice(0, 8)
+          .map((mistake) => ({
+            part: mistake.part,
+            type: mistake.mistakeType,
+            status: mistake.status,
+            note: mistake.personalNote,
+          })),
+      };
+
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: nextMessages.slice(-8),
+          context,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Không gửi được câu hỏi.');
+      setMessages((current) => [
+        ...current,
+        {
+          id: uid(),
+          role: 'assistant',
+          content: payload.reply || 'Mình chưa có câu trả lời phù hợp. Bạn thử hỏi lại ngắn hơn nhé.',
+        },
+      ]);
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: uid(),
+          role: 'assistant',
+          content: `Mình đang gặp lỗi: ${error.message}`,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    sendMessage();
+  }
+
+  return (
+    <div className={`assistant-widget ${open ? 'open' : ''}`}>
+      {open && (
+        <section className="assistant-panel" aria-label="Trợ lý ảo TOEIC">
+          <div className="assistant-panel-head">
+            <div className="assistant-mark">
+              <Bot size={24} />
+            </div>
+            <div>
+              <strong>Ask TOEIC AI anything</strong>
+              <span>Trợ lý học tập cá nhân</span>
+            </div>
+            <button type="button" className="assistant-close" onClick={() => setOpen(false)} aria-label="Đóng trợ lý">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="assistant-suggestions">
+            {suggestions.map((suggestion) => (
+              <button type="button" key={suggestion} onClick={() => sendMessage(suggestion)} disabled={loading}>
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
+          <div className="assistant-messages" ref={listRef}>
+            {messages.map((message) => (
+              <article className={`assistant-message ${message.role}`} key={message.id}>
+                <span>{message.content}</span>
+              </article>
+            ))}
+            {loading && (
+              <article className="assistant-message assistant typing">
+                <span>Đang suy nghĩ...</span>
+              </article>
+            )}
+          </div>
+
+          <form className="assistant-input-row" onSubmit={submit}>
+            <input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Message"
+              aria-label="Nhập câu hỏi cho trợ lý AI"
+            />
+            <button type="submit" disabled={loading || !input.trim()} aria-label="Gửi câu hỏi">
+              <Send size={18} />
+            </button>
+          </form>
+        </section>
+      )}
+
+      <button type="button" className="assistant-fab" onClick={() => setOpen((current) => !current)} aria-label="Mở trợ lý ảo">
+        {open ? <X size={24} /> : <MessageCircle size={25} />}
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [data, setData] = useState({ ...EMPTY_STATE });
   const [activeTab, setActiveTab] = useState('overview');
@@ -2055,6 +2208,12 @@ export default function App() {
           />
         )}
       </main>
+      <AssistantWidget
+        stats={stats}
+        sessions={data.sessions}
+        mistakes={data.mistakes}
+        activeTab={activeTab}
+      />
     </div>
   );
 }

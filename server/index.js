@@ -115,15 +115,15 @@ async function callGemini({ parts, responseMimeType = 'application/json', temper
     GEMINI_API_KEY,
   )}`;
 
+  const generationConfig = { temperature };
+  if (responseMimeType) generationConfig.response_mime_type = responseMimeType;
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts }],
-      generationConfig: {
-        temperature,
-        response_mime_type: responseMimeType,
-      },
+      generationConfig,
     }),
   });
 
@@ -264,6 +264,61 @@ app.put('/api/data', requireAuth, async (req, res) => {
     res.json(await writeState(req.user.id, req.body));
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ai/chat', requireAuth, async (req, res) => {
+  try {
+    const { message, history = [], context = {} } = req.body || {};
+    const cleanMessage = String(message || '').trim();
+    if (!cleanMessage) {
+      res.status(400).json({ error: 'Vui lòng nhập câu hỏi.' });
+      return;
+    }
+    if (cleanMessage.length > 1800) {
+      res.status(400).json({ error: 'Câu hỏi quá dài. Hãy rút gọn nội dung cần hỏi.' });
+      return;
+    }
+
+    const safeHistory = Array.isArray(history)
+      ? history
+          .slice(-8)
+          .map((item) => ({
+            role: item.role === 'assistant' ? 'assistant' : 'user',
+            content: String(item.content || '').slice(0, 1000),
+          }))
+      : [];
+
+    const prompt = `
+Bạn là trợ lý ảo trong ứng dụng TOEIC Tracker AI cho người học Việt Nam.
+
+Nhiệm vụ:
+- Trả lời câu hỏi về TOEIC, cách luyện đề, cách sửa lỗi sai, cách dùng app.
+- Ưu tiên lời khuyên ngắn gọn, thực tế, có bước hành động.
+- Nếu câu hỏi cần phân tích một câu TOEIC cụ thể, hướng dẫn người dùng sang tab "AI phân tích" để lưu kết quả vào sổ lỗi.
+- Nếu dữ liệu người dùng chưa đủ, nói rõ cần thêm nhật ký luyện đề hoặc lỗi sai.
+- Không bịa điểm số, không nói bạn đã lưu dữ liệu nếu chưa có API lưu.
+- Trả lời bằng tiếng Việt, tối đa 5 ý chính, không dùng markdown phức tạp.
+
+Context học tập hiện tại:
+${JSON.stringify(context, null, 2)}
+
+Lịch sử chat gần nhất:
+${JSON.stringify(safeHistory, null, 2)}
+
+Câu hỏi mới:
+${cleanMessage}
+`;
+
+    const reply = await callGemini({
+      parts: [{ text: prompt }],
+      responseMimeType: null,
+      temperature: 0.45,
+    });
+
+    res.json({ reply: reply || 'Mình chưa tạo được câu trả lời. Bạn thử hỏi lại ngắn gọn hơn nhé.' });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
