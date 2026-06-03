@@ -554,44 +554,38 @@ button:disabled {
 }
 
 .auth-loading-brand {
-  display: flex;
+  display: grid;
   width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
+  justify-items: center;
+  gap: 13px;
+  text-align: center;
 }
 
 .auth-loading-brand .brand-mark {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   margin: 0;
   border-radius: 12px;
+  color: #ffffff;
   font-size: 24px;
   box-shadow:
     0 14px 28px rgba(47, 109, 240, 0.22),
     0 0 0 7px #eff6ff;
 }
 
-.auth-loading-brand div:last-child {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.auth-loading-brand span {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+.auth-loading-brand .brand-symbol {
+  width: 40px;
+  height: 40px;
 }
 
 .auth-loading-brand h1 {
   margin: 0;
+  max-width: 100%;
   color: #111827;
-  font-size: clamp(24px, 3.6vw, 32px);
+  font-size: clamp(25px, 3vw, 32px);
   font-weight: 900;
   line-height: 1.08;
+  text-wrap: balance;
 }
 
 .study-truck-scene {
@@ -839,15 +833,19 @@ button:disabled {
   }
 
   .auth-loading-brand {
-    align-items: flex-start;
-    justify-content: flex-start;
+    justify-items: center;
   }
 
   .auth-loading-brand .brand-mark {
-    width: 46px;
-    height: 46px;
+    width: 50px;
+    height: 50px;
     border-radius: 10px;
     font-size: 22px;
+  }
+
+  .auth-loading-brand .brand-symbol {
+    width: 36px;
+    height: 36px;
   }
 
   .auth-loading-brand h1 {

@@ -873,11 +873,16 @@ function AuthLoadingScreen() {
     <main className="access-shell access-loading-shell" aria-busy="true">
       <section className="auth-loading-card" role="status" aria-live="polite">
         <div className="auth-loading-brand">
-          <div className="brand-mark">T</div>
-          <div>
-            <span>TOEIC Tracker</span>
-            <h1>{'\u0110ang m\u1edf kh\u00f4ng gian h\u1ecdc'}</h1>
-          </div>
+          <span className="brand-mark" aria-hidden="true">
+            <svg className="brand-symbol" viewBox="0 0 64 64" focusable="false">
+              <g transform="translate(-2 0)">
+                <circle cx="18" cy="24" r="8" />
+                <path d="M28 14h14v38l-7-3-7 3V14Z" />
+                <path d="M46 14h13v20L46 14Z" />
+              </g>
+            </svg>
+          </span>
+          <h1>{'\u0110ang m\u1edf kh\u00f4ng gian h\u1ecdc'}</h1>
         </div>
 
         <div className="study-truck-scene" aria-hidden="true">
