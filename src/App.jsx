@@ -184,6 +184,64 @@ function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function useTypewriterText(text, active, { step = 4, interval = 12, initialDelay = 120, onDone } = {}) {
+  const target = String(text || '');
+  const [displayText, setDisplayText] = useState(active ? '' : target);
+  const onDoneRef = useRef(onDone);
+
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    if (!active) {
+      setDisplayText(target);
+      return undefined;
+    }
+
+    let timeoutId;
+    let index = 0;
+    setDisplayText('');
+
+    function finish() {
+      timeoutId = window.setTimeout(() => onDoneRef.current?.(), 180);
+    }
+
+    function tick() {
+      index = Math.min(target.length, index + step);
+      setDisplayText(target.slice(0, index));
+
+      if (index >= target.length) {
+        finish();
+        return;
+      }
+
+      timeoutId = window.setTimeout(tick, interval);
+    }
+
+    if (!target) {
+      finish();
+    } else {
+      timeoutId = window.setTimeout(tick, initialDelay);
+    }
+
+    return () => window.clearTimeout(timeoutId);
+  }, [target, active, step, interval, initialDelay]);
+
+  return displayText;
+}
+
+function TypingText({ text, active = true, onDone }) {
+  const displayText = useTypewriterText(text, active, { step: 3, interval: 12, initialDelay: 80, onDone });
+
+  return (
+    <>
+      {displayText}
+      {active && <i className="typewriter-caret" aria-hidden="true" />}
+    </>
+  );
+}
+
 function formatInlineMarkdown(text, keyPrefix) {
   const source = String(text || '');
   const parts = [];
@@ -209,8 +267,14 @@ function formatInlineMarkdown(text, keyPrefix) {
   return parts.length ? parts : source;
 }
 
-function MarkdownReport({ markdown, compact = false }) {
-  const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+function MarkdownReport({ markdown, compact = false, animated = false, onAnimationEnd }) {
+  const visibleMarkdown = useTypewriterText(markdown, animated, {
+    step: compact ? 6 : 5,
+    interval: compact ? 8 : 10,
+    initialDelay: 120,
+    onDone: onAnimationEnd,
+  });
+  const lines = String(visibleMarkdown || '').replace(/\r\n/g, '\n').split('\n');
   const blocks = [];
   let paragraph = [];
 
@@ -294,7 +358,12 @@ function MarkdownReport({ markdown, compact = false }) {
 
   pushParagraph();
 
-  return <div className={`markdown-box ${compact ? 'mini' : ''}`}>{blocks}</div>;
+  return (
+    <div className={`markdown-box ${compact ? 'mini' : ''}${animated ? ' is-writing' : ''}`} aria-live={animated ? 'polite' : undefined}>
+      {blocks}
+      {animated && <i className="typewriter-caret markdown-caret" aria-hidden="true" />}
+    </div>
+  );
 }
 
 function numberValue(value) {
@@ -1923,10 +1992,13 @@ function AIAnalyzer({ onSaveMistake }) {
 function Reports({ stats, sessions, mistakes, reports, setReports }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [writingReportId, setWritingReportId] = useState(null);
+  const isWritingReport = Boolean(writingReportId);
 
   async function generateReport() {
     setLoading(true);
     setError('');
+    setWritingReportId(null);
     try {
       const response = await fetch('/api/ai/report', {
         method: 'POST',
@@ -1936,7 +2008,9 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không tạo được báo cáo');
-      setReports((current) => [{ id: uid(), markdown: data.markdown, createdAt: new Date().toLocaleString('vi-VN') }, ...current]);
+      const nextReport = { id: uid(), markdown: data.markdown, createdAt: new Date().toLocaleString('vi-VN') };
+      setReports((current) => [nextReport, ...current]);
+      setWritingReportId(nextReport.id);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1949,13 +2023,21 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
       <section className="panel wide">
         <div className="panel-heading">
           <h2>Báo cáo AI</h2>
-          <button className="primary-button" onClick={generateReport} disabled={loading}>
+          <button className="primary-button" onClick={generateReport} disabled={loading || isWritingReport}>
             <Sparkles size={18} />
-            {loading ? 'Đang tạo...' : 'Tạo báo cáo'}
+            {loading ? 'Đang tạo...' : isWritingReport ? 'Đang viết...' : 'Tạo báo cáo'}
           </button>
         </div>
         {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-        {reports[0] ? <MarkdownReport markdown={reports[0].markdown} /> : <EmptyState title="Chưa có báo cáo" />}
+        {reports[0] ? (
+          <MarkdownReport
+            markdown={reports[0].markdown}
+            animated={reports[0].id === writingReportId}
+            onAnimationEnd={() => setWritingReportId((current) => (current === reports[0].id ? null : current))}
+          />
+        ) : (
+          <EmptyState title="Chưa có báo cáo" />
+        )}
       </section>
 
       <section className="panel wide">
@@ -2043,21 +2125,25 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Không gửi được câu hỏi.');
+      const assistantMessageId = uid();
       setMessages((current) => [
         ...current,
         {
-          id: uid(),
+          id: assistantMessageId,
           role: 'assistant',
           content: payload.reply || 'Mình chưa có câu trả lời phù hợp. Bạn thử hỏi lại ngắn hơn nhé.',
+          animated: true,
         },
       ]);
     } catch (error) {
+      const assistantMessageId = uid();
       setMessages((current) => [
         ...current,
         {
-          id: uid(),
+          id: assistantMessageId,
           role: 'assistant',
           content: `Mình đang gặp lỗi: ${error.message}`,
+          animated: true,
         },
       ]);
     } finally {
@@ -2088,11 +2174,26 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
           </div>
 
           <div className="assistant-messages" ref={listRef}>
-            {messages.map((message) => (
-              <article className={`assistant-message ${message.role}`} key={message.id}>
-                <span>{message.content}</span>
-              </article>
-            ))}
+            {messages.map((message) => {
+              const shouldAnimate = message.role === 'assistant' && message.animated;
+
+              return (
+                <article className={`assistant-message ${message.role}`} key={message.id}>
+                  <span>
+                    {shouldAnimate ? (
+                      <TypingText
+                        text={message.content}
+                        onDone={() => {
+                          setMessages((current) => current.map((item) => (item.id === message.id ? { ...item, animated: false } : item)));
+                        }}
+                      />
+                    ) : (
+                      message.content
+                    )}
+                  </span>
+                </article>
+              );
+            })}
             {loading && (
               <article className="assistant-message assistant typing">
                 <span>Đang suy nghĩ...</span>

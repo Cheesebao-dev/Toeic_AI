@@ -2197,6 +2197,34 @@ textarea:focus {
   padding: 10px 12px;
 }
 
+@keyframes typewriter-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typewriter-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: #2563eb;
+  border-radius: 2px;
+  animation: typewriter-caret-blink 0.9s steps(2, start) infinite;
+}
+
+.markdown-caret {
+  height: 17px;
+  margin-top: 3px;
+}
+
 .markdown-box {
   max-height: 560px;
   overflow: auto;
@@ -2295,6 +2323,12 @@ textarea:focus {
 
 .markdown-box.mini > * + * {
   margin-top: 9px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-caret {
+    animation: none;
+  }
 }
 
 .empty-state {
