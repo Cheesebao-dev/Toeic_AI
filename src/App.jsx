@@ -82,8 +82,8 @@ const MISTAKE_TYPES = [
 
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
-const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
-const PART_BAR_COLOR = '#2563eb';
+const PIE_COLORS = ['#2f6df0', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
+const PART_BAR_COLOR = '#2f6df0';
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
 const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng'];
 const DEPLOYED_API_ORIGIN = 'https://toeic-ai-tracker.onrender.com';
@@ -1019,6 +1019,84 @@ function Field({ label, children }) {
   );
 }
 
+function SelectMenu({ value, options, onChange, placeholder = 'Chọn', className = '' }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+  const normalizedOptions = options.map((option) =>
+    typeof option === 'string'
+      ? { value: option, label: option || placeholder }
+      : { ...option, label: option.label || option.value || placeholder },
+  );
+  const selectedOption = normalizedOptions.find((option) => String(option.value) === String(value ?? ''));
+  const selectedLabel = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function closeOnOutsideClick(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  function chooseOption(nextValue) {
+    onChange(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div className={`select-menu ${open ? 'open' : ''} ${className}`} ref={menuRef}>
+      <button
+        type="button"
+        className="select-menu-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{selectedLabel}</span>
+        <ChevronDown size={16} />
+      </button>
+      {open && (
+        <div className="select-menu-list" role="listbox">
+          {normalizedOptions.map((option) => {
+            const isSelected = String(option.value) === String(value ?? '');
+            return (
+              <button
+                key={String(option.value)}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`select-menu-option ${isSelected ? 'selected' : ''}`}
+                onClick={() => chooseOption(option.value)}
+              >
+                <span>
+                  <strong>{option.label}</strong>
+                  {option.detail && <small>{option.detail}</small>}
+                </span>
+                {isSelected && <CheckCircle2 className="select-menu-check" size={15} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IconButton({ title, children, className = '', ...props }) {
   return (
     <button className={`icon-button ${className}`} title={title} aria-label={title} {...props}>
@@ -1189,7 +1267,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
                 <YAxis yAxisId="left" domain={[0, 990]} />
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
                 <Tooltip />
-                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#2f6df0" strokeWidth={3} dot={{ r: 4 }} />
                 <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#22a783" strokeWidth={3} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -1271,7 +1349,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
   const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2].score || 0 : 0;
   const scoreDelta = stats.latestScore && previousScore ? stats.latestScore - previousScore : 0;
   const reviewData = [
-    { name: 'Cần xử lý', value: stats.openMistakes, color: '#2563eb' },
+    { name: 'Cần xử lý', value: stats.openMistakes, color: '#2f6df0' },
     { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#22a783' },
   ];
   const reviewTotal = reviewData.reduce((sum, item) => sum + item.value, 0);
@@ -1779,17 +1857,14 @@ function MistakeForm({ draft, setDraft, onSave, editingId, onCancel }) {
           <input value={draft.sourceTitle} onChange={(event) => setDraft({ ...draft, sourceTitle: event.target.value })} placeholder="ETS Test 01" />
         </Field>
         <Field label="Part">
-          <select
+          <SelectMenu
             value={draft.part}
-            onChange={(event) => {
-              const part = PARTS.find((item) => item.id === event.target.value);
-              setDraft({ ...draft, part: event.target.value, skill: part?.skill || selectedPart?.skill || 'Reading' });
+            options={PARTS.map((part) => ({ value: part.id, label: part.id, detail: part.skill }))}
+            onChange={(nextPart) => {
+              const part = PARTS.find((item) => item.id === nextPart);
+              setDraft({ ...draft, part: nextPart, skill: part?.skill || selectedPart?.skill || 'Reading' });
             }}
-          >
-            {PARTS.map((part) => (
-              <option key={part.id}>{part.id}</option>
-            ))}
-          </select>
+          />
         </Field>
         <Field label="Câu số">
           <input value={draft.questionNumber} onChange={(event) => setDraft({ ...draft, questionNumber: event.target.value })} placeholder="101" />
@@ -1810,32 +1885,34 @@ function MistakeForm({ draft, setDraft, onSave, editingId, onCancel }) {
 
       <div className="form-grid">
         <Field label="Bạn chọn">
-          <select value={draft.userAnswer} onChange={(event) => setDraft({ ...draft, userAnswer: event.target.value })}>
-            {ANSWERS.map((answer) => (
-              <option key={answer}>{answer}</option>
-            ))}
-          </select>
+          <SelectMenu
+            value={draft.userAnswer}
+            options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
+            placeholder="Chọn đáp án"
+            onChange={(answer) => setDraft({ ...draft, userAnswer: answer })}
+          />
         </Field>
         <Field label="Đáp án đúng">
-          <select value={draft.correctAnswer} onChange={(event) => setDraft({ ...draft, correctAnswer: event.target.value })}>
-            {ANSWERS.map((answer) => (
-              <option key={answer}>{answer}</option>
-            ))}
-          </select>
+          <SelectMenu
+            value={draft.correctAnswer}
+            options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
+            placeholder="Chọn đáp án"
+            onChange={(answer) => setDraft({ ...draft, correctAnswer: answer })}
+          />
         </Field>
         <Field label="Loại lỗi">
-          <select value={draft.mistakeType} onChange={(event) => setDraft({ ...draft, mistakeType: event.target.value })}>
-            {MISTAKE_TYPES.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
+          <SelectMenu
+            value={draft.mistakeType}
+            options={MISTAKE_TYPES}
+            onChange={(mistakeType) => setDraft({ ...draft, mistakeType })}
+          />
         </Field>
         <Field label="Trạng thái">
-          <select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>
-            {STATUSES.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
+          <SelectMenu
+            value={draft.status}
+            options={STATUSES}
+            onChange={(status) => setDraft({ ...draft, status })}
+          />
         </Field>
       </div>
 
@@ -1941,24 +2018,24 @@ function Mistakes({ mistakes, setMistakes, initialDraft }) {
             <Search size={17} />
             <input value={filters.query} onChange={(event) => setFilters({ ...filters, query: event.target.value })} placeholder="Tìm lỗi" />
           </div>
-          <select value={filters.part} onChange={(event) => setFilters({ ...filters, part: event.target.value })}>
-            <option>Tất cả</option>
-            {PARTS.map((part) => (
-              <option key={part.id}>{part.id}</option>
-            ))}
-          </select>
-          <select value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}>
-            <option>Tất cả</option>
-            {MISTAKE_TYPES.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
-          <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
-            <option>Tất cả</option>
-            {STATUSES.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
+          <SelectMenu
+            className="filter-select"
+            value={filters.part}
+            options={[{ value: 'Tất cả', label: 'Part', detail: 'Tất cả' }, ...PARTS.map((part) => ({ value: part.id, label: part.id, detail: part.skill }))]}
+            onChange={(part) => setFilters({ ...filters, part })}
+          />
+          <SelectMenu
+            className="filter-select"
+            value={filters.type}
+            options={[{ value: 'Tất cả', label: 'Loại lỗi', detail: 'Tất cả' }, ...MISTAKE_TYPES]}
+            onChange={(type) => setFilters({ ...filters, type })}
+          />
+          <SelectMenu
+            className="filter-select"
+            value={filters.status}
+            options={[{ value: 'Tất cả', label: 'Trạng thái', detail: 'Tất cả' }, ...STATUSES]}
+            onChange={(status) => setFilters({ ...filters, status })}
+          />
         </div>
 
         <div className="record-list">
@@ -2084,20 +2161,21 @@ function AIAnalyzer({ onSaveMistake }) {
           <span>Gemini 2.5 Flash</span>
         </div>
         <form onSubmit={analyze} className="stack-form">
-          <div className="form-grid">
-            <Field label="Part">
-              <select value={form.part} onChange={(event) => setForm({ ...form, part: event.target.value })}>
-                {PARTS.map((part) => (
-                  <option key={part.id}>{part.id}</option>
-                ))}
-              </select>
+        <div className="form-grid">
+          <Field label="Part">
+              <SelectMenu
+                value={form.part}
+                options={PARTS.map((part) => ({ value: part.id, label: part.id, detail: part.skill }))}
+                onChange={(part) => setForm({ ...form, part })}
+              />
             </Field>
             <Field label="Bạn chọn">
-              <select value={form.userAnswer} onChange={(event) => setForm({ ...form, userAnswer: event.target.value })}>
-                {ANSWERS.map((answer) => (
-                  <option key={answer}>{answer}</option>
-                ))}
-              </select>
+              <SelectMenu
+                value={form.userAnswer}
+                options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
+                placeholder="Chọn đáp án"
+                onChange={(userAnswer) => setForm({ ...form, userAnswer })}
+              />
             </Field>
           </div>
           <Field label="Câu hỏi">
