@@ -663,48 +663,90 @@ function IconButton({ title, children, className = '', ...props }) {
   );
 }
 
-function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, onImportClick }) {
+function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, onImportClick, onLogout, user }) {
   const navItems = [
-    ['overview', 'Tổng quan', LayoutDashboard],
-    ['journal', 'Nhật ký', ClipboardList],
-    ['mistakes', 'Sổ tay lỗi sai', NotebookTabs],
-    ['ai', 'AI phân tích', Sparkles],
-    ['reports', 'Báo cáo', FileText],
+    { id: 'overview', label: 'Tổng quan', detail: 'Dashboard', icon: LayoutDashboard },
+    { id: 'journal', label: 'Nhật ký', detail: 'Buổi luyện đề', icon: ClipboardList },
+    { id: 'mistakes', label: 'Sổ lỗi sai', detail: 'Review câu sai', icon: NotebookTabs },
+    { id: 'ai', label: 'AI phân tích', detail: 'Gemini feedback', icon: Sparkles },
+    { id: 'reports', label: 'Báo cáo', detail: 'Tiến độ học', icon: FileText },
   ];
+  const displayName = user?.name || user?.email || 'TOEIC user';
+  const accountLabel = user?.email || 'Tài khoản cá nhân';
+  const avatarLetter = displayName.trim().charAt(0).toUpperCase() || 'T';
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="brand-row">
-        <div className="brand-mark">T</div>
-        {!collapsed && (
-          <div>
-            <strong>TOEIC Tracker</strong>
-            <span>AI Study OS</span>
-          </div>
-        )}
-        <IconButton title="Thu gọn" onClick={() => setCollapsed(!collapsed)}>
+      <div className="sidebar-head">
+        <button className="sidebar-brand" type="button" onClick={() => setActiveTab('overview')} title="TOEIC Tracker">
+          <span className="brand-mark">T</span>
+          {!collapsed && (
+            <span className="sidebar-brand-copy">
+              <strong>TOEIC Tracker</strong>
+              <span>AI Study OS</span>
+            </span>
+          )}
+        </button>
+        <IconButton
+          className="sidebar-toggle"
+          title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+          onClick={() => setCollapsed(!collapsed)}
+        >
           <Menu size={19} />
         </IconButton>
       </div>
 
-      <nav className="nav-list">
-        {navItems.map(([id, label, Icon]) => (
-          <button key={id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)} title={label}>
-            <Icon size={19} />
-            {!collapsed && <span>{label}</span>}
-          </button>
-        ))}
-      </nav>
+      <div className="sidebar-scroll">
+        <div className="sidebar-section">
+          {!collapsed && <span className="sidebar-section-title">Main menu</span>}
+          <nav className="nav-list" aria-label="Điều hướng chính">
+            {navItems.map(({ id, label, detail, icon: Icon }) => (
+              <button
+                key={id}
+                className={activeTab === id ? 'active' : ''}
+                onClick={() => setActiveTab(id)}
+                title={label}
+                aria-current={activeTab === id ? 'page' : undefined}
+              >
+                <Icon size={19} />
+                {!collapsed && (
+                  <span className="sidebar-link-copy">
+                    <span>{label}</span>
+                    <small>{detail}</small>
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
 
-      <div className="sidebar-tools">
-        <button onClick={onExport} title="Xuất dữ liệu">
-          <Download size={18} />
-          {!collapsed && <span>Xuất JSON</span>}
-        </button>
-        <button onClick={onImportClick} title="Nhập dữ liệu">
-          <Upload size={18} />
-          {!collapsed && <span>Nhập JSON</span>}
-        </button>
+      <div className="sidebar-footer">
+        {!collapsed && <span className="sidebar-section-title">Data</span>}
+        <div className="sidebar-tools">
+          <button onClick={onExport} title="Xuất dữ liệu">
+            <Download size={18} />
+            {!collapsed && <span>Xuất JSON</span>}
+          </button>
+          <button onClick={onImportClick} title="Nhập dữ liệu">
+            <Upload size={18} />
+            {!collapsed && <span>Nhập JSON</span>}
+          </button>
+          <button className="danger" onClick={onLogout} title="Đăng xuất">
+            <LogOut size={18} />
+            {!collapsed && <span>Đăng xuất</span>}
+          </button>
+        </div>
+
+        <div className="sidebar-profile" title={accountLabel}>
+          <span className="sidebar-avatar">{avatarLetter}</span>
+          {!collapsed && (
+            <span className="sidebar-profile-copy">
+              <strong>{displayName}</strong>
+              <small>{accountLabel}</small>
+            </span>
+          )}
+        </div>
       </div>
     </aside>
   );
@@ -2155,6 +2197,8 @@ export default function App() {
         setCollapsed={setCollapsed}
         onExport={exportData}
         onImportClick={() => importRef.current?.click()}
+        onLogout={logout}
+        user={auth.user}
       />
       <input ref={importRef} className="hidden-input" type="file" accept="application/json" onChange={importData} />
 
@@ -2174,10 +2218,6 @@ export default function App() {
             <span>{stats.totalQuestions} câu</span>
             <span>{stats.accuracy}% accuracy</span>
             <span>{stats.openMistakes} lỗi mở</span>
-            <button className="topbar-logout" onClick={logout} title="Đăng xuất" aria-label="Đăng xuất">
-              <LogOut size={16} />
-              Đăng xuất
-            </button>
           </div>
         </header>
 
