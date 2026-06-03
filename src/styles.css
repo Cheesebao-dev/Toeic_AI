@@ -3887,7 +3887,8 @@ textarea:focus {
   display: flex;
 }
 
-.assistant-message span {
+.assistant-message span,
+.assistant-bubble {
   display: block;
   max-width: 88%;
   padding: 10px 12px;
@@ -3901,17 +3902,60 @@ textarea:focus {
   white-space: pre-wrap;
 }
 
+.assistant-markdown-bubble {
+  white-space: normal;
+}
+
+.assistant-markdown-bubble .markdown-box {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.assistant-markdown-bubble .markdown-box > * + * {
+  margin-top: 8px;
+}
+
+.assistant-markdown-bubble .markdown-box h3 {
+  font-size: 14px;
+}
+
+.assistant-markdown-bubble .markdown-box h4,
+.assistant-markdown-bubble .markdown-box h5 {
+  font-size: 13px;
+}
+
+.assistant-markdown-bubble .markdown-box p,
+.assistant-markdown-bubble .markdown-box li {
+  color: #334155;
+  font-weight: 560;
+}
+
+.assistant-markdown-bubble .markdown-box ul,
+.assistant-markdown-bubble .markdown-box ol {
+  gap: 5px;
+  padding-left: 18px;
+}
+
 .assistant-message.user {
   justify-content: flex-end;
 }
 
-.assistant-message.user span {
+.assistant-message.user span,
+.assistant-message.user .assistant-bubble {
   color: #ffffff;
   background: linear-gradient(135deg, #df4d8d, #8b70ed);
   border-color: transparent;
 }
 
-.assistant-message.typing span {
+.assistant-message.typing span,
+.assistant-message.typing .assistant-bubble {
   color: #8a7284;
   font-weight: 800;
 }
@@ -4081,7 +4125,8 @@ body::before {
 .primary-button,
 .overview-kpi-card.primary,
 .session-avatar,
-.assistant-message.user span {
+.assistant-message.user span,
+.assistant-message.user .assistant-bubble {
   background: linear-gradient(135deg, #2563eb, #4f46e5);
 }
 
@@ -4339,7 +4384,8 @@ textarea:focus,
   background: #eff6ff;
 }
 
-.assistant-message span {
+.assistant-message span,
+.assistant-bubble {
   color: #334155;
   background: #ffffff;
   border-color: #e2e8f0;

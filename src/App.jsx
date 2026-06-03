@@ -278,6 +278,22 @@ function formatInlineMarkdown(text, keyPrefix) {
   return parts.length ? parts : source;
 }
 
+function getReadableMarkdownText(markdown) {
+  return String(markdown || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/^(\s*)[-*]\s+/, '$1- ')
+      .replace(/^(\s*)\d+[.)]\s+/, '$1')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^\s*>\s?/, ''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 function MarkdownReport({ markdown, compact = false, animated = false, onAnimationEnd }) {
   const visibleMarkdown = useTypewriterText(markdown, animated, {
     step: compact ? 6 : 5,
@@ -2276,18 +2292,24 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
 
               return (
                 <article className={`assistant-message ${message.role}`} key={message.id}>
-                  <span>
-                    {shouldAnimate ? (
-                      <TypingText
-                        text={message.content}
-                        onDone={() => {
-                          setMessages((current) => current.map((item) => (item.id === message.id ? { ...item, animated: false } : item)));
-                        }}
-                      />
+                  {message.role === 'assistant' ? (
+                    shouldAnimate ? (
+                      <div className="assistant-bubble">
+                        <TypingText
+                          text={getReadableMarkdownText(message.content)}
+                          onDone={() => {
+                            setMessages((current) => current.map((item) => (item.id === message.id ? { ...item, animated: false } : item)));
+                          }}
+                        />
+                      </div>
                     ) : (
-                      message.content
-                    )}
-                  </span>
+                      <div className="assistant-bubble assistant-markdown-bubble">
+                        <MarkdownReport markdown={message.content} compact />
+                      </div>
+                    )
+                  ) : (
+                    <div className="assistant-bubble">{message.content}</div>
+                  )}
                 </article>
               );
             })}
