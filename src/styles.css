@@ -4846,6 +4846,19 @@ textarea:focus,
   fill: currentColor;
 }
 
+.auth-loading-brand .brand-mark {
+  color: #020617;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    0 12px 26px rgba(15, 23, 42, 0.09),
+    0 0 0 7px #f8fafc;
+}
+
+.auth-loading-brand .brand-symbol {
+  fill: currentColor;
+}
+
 .sidebar-brand-copy,
 .sidebar-link-copy,
 .sidebar-profile-copy,
