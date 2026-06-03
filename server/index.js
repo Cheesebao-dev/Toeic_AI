@@ -100,7 +100,11 @@ function parseJsonText(text) {
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (!match) return null;
-    return JSON.parse(match[0]);
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -358,7 +362,8 @@ Yêu cầu:
 - Ngắn gọn, thực tế, có hành động cụ thể.
 - Nhận xét tiến độ, part yếu, loại lỗi lặp lại, và kế hoạch 7 ngày.
 - Không bịa dữ liệu ngoài JSON được cung cấp.
-- Trả về JSON hợp lệ theo schema: { "markdown": "..." }
+
+Quan trọng: Phần trả lời cuối cùng chỉ được là nội dung Markdown thuần.
 
 Stats:
 ${JSON.stringify(stats, null, 2)}
@@ -369,13 +374,12 @@ ${JSON.stringify((sessions || []).slice(-12), null, 2)}
 Open mistakes:
 ${JSON.stringify((mistakes || []).filter((item) => item.status !== 'Đã khắc phục').slice(-20), null, 2)}
 `;
-    const text = await callGemini({ parts: [{ text: prompt }], temperature: 0.35 });
-    const parsed = parseJsonText(text);
-    if (!parsed?.markdown) {
-      res.status(502).json({ error: 'AI response was not valid report JSON.', raw: text });
+    const markdown = await callGemini({ parts: [{ text: prompt }], responseMimeType: null, temperature: 0.35 });
+    if (!markdown) {
+      res.status(502).json({ error: 'AI response was empty.' });
       return;
     }
-    res.json(parsed);
+    res.json({ markdown });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
