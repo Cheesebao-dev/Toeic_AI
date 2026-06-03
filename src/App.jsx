@@ -2076,7 +2076,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
   );
 }
 
-function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
+function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = true }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2105,6 +2105,19 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
     setLoading(true);
 
     try {
+      if (!hasGeminiKey) {
+        setMessages((current) => [
+          ...current,
+          {
+            id: uid(),
+            role: 'assistant',
+            content: 'AI chat chưa hoạt động vì server chưa cấu hình GEMINI_API_KEY. Bạn cần thêm key này trên môi trường deploy rồi thử lại.',
+            animated: true,
+          },
+        ]);
+        return;
+      }
+
       const context = {
         activeTab,
         stats,
@@ -2136,8 +2149,8 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
           context,
         }),
       });
-      const payload = await readJsonResponse(response).catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'Không gửi được câu hỏi.');
+      const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
+      if (!response.ok) throw new Error(payload.error || `Không gửi được câu hỏi. HTTP ${response.status}`);
       const assistantMessageId = uid();
       setMessages((current) => [
         ...current,
@@ -2246,6 +2259,7 @@ export default function App() {
     syncEnabled: false,
     saving: false,
     storage: 'local',
+    hasGeminiKey: false,
     error: '',
   });
   const importRef = useRef(null);
@@ -2265,7 +2279,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        const payload = await readJsonResponse(response).catch(() => ({}));
+        const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
         if (response.status === 401) {
           setAuth({ checked: true, user: null, error: 'Phiên đăng nhập đã hết hạn.', loading: false });
           setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
@@ -2295,10 +2309,11 @@ export default function App() {
           ...current,
           checked: true,
           storage: health.storage || 'backend',
+          hasGeminiKey: Boolean(health.hasGeminiKey),
         }));
 
         const meResponse = await fetch('/api/auth/me', { credentials: 'include' });
-        const mePayload = await readJsonResponse(meResponse).catch(() => ({}));
+        const mePayload = await readJsonResponse(meResponse).catch((error) => ({ error: error.message }));
 
         if (cancelled) return;
 
@@ -2317,6 +2332,7 @@ export default function App() {
             syncEnabled: false,
             saving: false,
             storage: 'local',
+            hasGeminiKey: false,
             error: `Backend chưa sẵn sàng: ${error.message}`,
           });
         }
@@ -2331,7 +2347,7 @@ export default function App() {
 
   async function fetchBackendData(user, storage = backend.storage) {
     const response = await fetch('/api/data', { credentials: 'include' });
-    const payload = await readJsonResponse(response).catch(() => ({}));
+    const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
     if (response.status === 401) {
       setAuth({ checked: true, user: null, error: 'Vui lòng đăng nhập lại.', loading: false });
       setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
@@ -2356,6 +2372,7 @@ export default function App() {
       syncEnabled: true,
       saving: false,
       storage,
+      hasGeminiKey: backend.hasGeminiKey,
       error: '',
     });
 
@@ -2426,7 +2443,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const payload = await readJsonResponse(response).catch(() => ({}));
+      const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
       if (!response.ok) throw new Error(payload.error || 'Không đăng nhập được.');
 
       setAuth({ checked: true, user: payload.user, error: '', loading: false });
@@ -2503,6 +2520,7 @@ export default function App() {
         sessions={data.sessions}
         mistakes={data.mistakes}
         activeTab={activeTab}
+        hasGeminiKey={backend.hasGeminiKey}
       />
     </div>
   );

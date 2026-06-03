@@ -173,7 +173,7 @@ function parseJsonText(text) {
 
 async function callGemini({ parts, responseMimeType = 'application/json', temperature = 0.25 }) {
   if (!GEMINI_API_KEY) {
-    const error = new Error('Missing GEMINI_API_KEY in .env');
+    const error = new Error('Chưa cấu hình GEMINI_API_KEY trên server.');
     error.status = 500;
     throw error;
   }
@@ -196,7 +196,13 @@ async function callGemini({ parts, responseMimeType = 'application/json', temper
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload?.error?.message || `Gemini request failed with ${response.status}`;
+    const geminiMessage = payload?.error?.message || '';
+    let message = geminiMessage || `Gemini request failed with ${response.status}`;
+    if (response.status === 401 || response.status === 403) {
+      message = 'GEMINI_API_KEY không hợp lệ hoặc chưa có quyền dùng model này.';
+    } else if (response.status === 429) {
+      message = 'Gemini đang hết quota hoặc bị giới hạn tốc độ. Vui lòng thử lại sau.';
+    }
     const error = new Error(message);
     error.status = response.status;
     throw error;
