@@ -2183,6 +2183,9 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
         }),
       });
       const payload = await readJsonResponse(response).catch((error) => ({ error: error.message }));
+      if (response.status === 401) {
+        throw new Error('Bạn cần đăng nhập lại để dùng trợ lý AI.');
+      }
       if (!response.ok) throw new Error(payload.error || `Không gửi được câu hỏi. HTTP ${response.status}`);
       const assistantMessageId = uid();
       setMessages((current) => [

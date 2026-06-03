@@ -6,6 +6,8 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: GEMINI_API_KEY

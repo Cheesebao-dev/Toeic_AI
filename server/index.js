@@ -37,6 +37,7 @@ const CONFIGURED_FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS || process.env
   .map((origin) => origin.trim())
   .filter(Boolean);
 const ALLOWED_FRONTEND_ORIGINS = new Set([...LOCAL_FRONTEND_ORIGINS, ...CONFIGURED_FRONTEND_ORIGINS]);
+const IS_RENDER = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID || process.env.RENDER_SERVICE_NAME);
 
 app.use(
   cors({
@@ -58,7 +59,7 @@ function isValidEmail(email) {
 }
 
 function cookieOptions() {
-  const crossSiteCookie = process.env.NODE_ENV === 'production' || CONFIGURED_FRONTEND_ORIGINS.length > 0;
+  const crossSiteCookie = process.env.NODE_ENV === 'production' || IS_RENDER || CONFIGURED_FRONTEND_ORIGINS.length > 0;
   return {
     httpOnly: true,
     sameSite: crossSiteCookie ? 'none' : 'lax',
