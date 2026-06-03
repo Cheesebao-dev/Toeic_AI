@@ -251,7 +251,7 @@ button:disabled {
   place-items: center;
   overflow: hidden;
   padding: 18px;
-  background: radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #6366f1 100%);
+  background: radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #f9a8d4 100%);
 }
 
 .auth-stage {
