@@ -548,6 +548,19 @@ function saveLocalState(userId, state) {
   localStorage.setItem(stateKey(userId), JSON.stringify(state));
 }
 
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const error = new Error('Phản hồi máy chủ không phải JSON hợp lệ. Vui lòng thử lại sau khi bản deploy hoàn tất.');
+    error.responseText = text;
+    throw error;
+  }
+}
+
 function isStateEmpty(state) {
   return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length;
 }
@@ -1856,7 +1869,7 @@ function AIAnalyzer({ onSaveMistake }) {
         credentials: 'include',
         body: payload,
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (!response.ok) throw new Error(data.error || 'Không phân tích được');
       setResults(data.questions || []);
     } catch (err) {
@@ -2006,7 +2019,7 @@ function Reports({ stats, sessions, mistakes, reports, setReports }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stats, sessions, mistakes }),
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (!response.ok) throw new Error(data.error || 'Không tạo được báo cáo');
       const nextReport = { id: uid(), markdown: data.markdown, createdAt: new Date().toLocaleString('vi-VN') };
       setReports((current) => [nextReport, ...current]);
@@ -2123,7 +2136,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab }) {
           context,
         }),
       });
-      const payload = await response.json().catch(() => ({}));
+      const payload = await readJsonResponse(response).catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Không gửi được câu hỏi.');
       const assistantMessageId = uid();
       setMessages((current) => [
@@ -2252,7 +2265,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
-        const payload = await response.json().catch(() => ({}));
+        const payload = await readJsonResponse(response).catch(() => ({}));
         if (response.status === 401) {
           setAuth({ checked: true, user: null, error: 'Phiên đăng nhập đã hết hạn.', loading: false });
           setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
@@ -2274,7 +2287,7 @@ export default function App() {
     async function boot() {
       try {
         const healthResponse = await fetch('/api/health');
-        const health = await healthResponse.json();
+        const health = await readJsonResponse(healthResponse);
 
         if (cancelled) return;
 
@@ -2285,7 +2298,7 @@ export default function App() {
         }));
 
         const meResponse = await fetch('/api/auth/me', { credentials: 'include' });
-        const mePayload = await meResponse.json().catch(() => ({}));
+        const mePayload = await readJsonResponse(meResponse).catch(() => ({}));
 
         if (cancelled) return;
 
@@ -2318,7 +2331,7 @@ export default function App() {
 
   async function fetchBackendData(user, storage = backend.storage) {
     const response = await fetch('/api/data', { credentials: 'include' });
-    const payload = await response.json().catch(() => ({}));
+    const payload = await readJsonResponse(response).catch(() => ({}));
     if (response.status === 401) {
       setAuth({ checked: true, user: null, error: 'Vui lòng đăng nhập lại.', loading: false });
       setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
@@ -2413,7 +2426,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const payload = await response.json().catch(() => ({}));
+      const payload = await readJsonResponse(response).catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Không đăng nhập được.');
 
       setAuth({ checked: true, user: payload.user, error: '', loading: false });

@@ -93,19 +93,82 @@ function extractGeminiText(payload) {
   return parts.map((part) => part.text || '').join('\n').trim();
 }
 
-function parseJsonText(text) {
-  if (!text) return null;
+function escapeControlCharactersInJsonStrings(value) {
+  let output = '';
+  let inString = false;
+  let escaped = false;
+
+  for (const char of String(value || '')) {
+    const code = char.charCodeAt(0);
+
+    if (!inString) {
+      if (char === '"') inString = true;
+      output += char;
+      continue;
+    }
+
+    if (escaped) {
+      output += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      output += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      output += char;
+      inString = false;
+      continue;
+    }
+
+    if (char === '\n') {
+      output += '\\n';
+    } else if (char === '\r') {
+      output += '\\r';
+    } else if (char === '\t') {
+      output += '\\t';
+    } else if (code < 0x20) {
+      output += `\\u${code.toString(16).padStart(4, '0')}`;
+    } else {
+      output += char;
+    }
+  }
+
+  return output;
+}
+
+function tryParseJsonCandidate(candidate) {
+  if (!candidate) return null;
+
   try {
-    return JSON.parse(text);
+    return JSON.parse(candidate);
   } catch {
-    const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (!match) return null;
     try {
-      return JSON.parse(match[0]);
+      return JSON.parse(escapeControlCharactersInJsonStrings(candidate));
     } catch {
       return null;
     }
   }
+}
+
+function parseJsonText(text) {
+  if (!text) return null;
+  const trimmed = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const direct = tryParseJsonCandidate(trimmed);
+  if (direct) return direct;
+
+  const objectStart = trimmed.indexOf('{');
+  const objectEnd = trimmed.lastIndexOf('}');
+  const arrayStart = trimmed.indexOf('[');
+  const arrayEnd = trimmed.lastIndexOf(']');
+  const objectCandidate = objectStart >= 0 && objectEnd > objectStart ? trimmed.slice(objectStart, objectEnd + 1) : '';
+  const arrayCandidate = arrayStart >= 0 && arrayEnd > arrayStart ? trimmed.slice(arrayStart, arrayEnd + 1) : '';
+
+  return tryParseJsonCandidate(objectCandidate) || tryParseJsonCandidate(arrayCandidate);
 }
 
 async function callGemini({ parts, responseMimeType = 'application/json', temperature = 0.25 }) {
