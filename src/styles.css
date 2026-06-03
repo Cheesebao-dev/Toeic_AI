@@ -5371,3 +5371,207 @@ textarea:focus,
     flex-direction: column;
   }
 }
+
+/* Soft pastel blue theme */
+:root {
+  --blue: #7cc7f6;
+  --blue-strong: #4aa3df;
+  --ink: #102a43;
+  --muted: #668199;
+  --line: #d8e9f6;
+  --surface: #ffffff;
+  --soft: #f4fbff;
+  --pink: #7cc7f6;
+  --pink-soft: #eaf7ff;
+  --pink-softer: #f7fcff;
+  --lilac: #a8c7ff;
+  --sky: #8bd8f7;
+  --shadow: 0 16px 42px rgba(48, 116, 154, 0.09);
+}
+
+body,
+.app-shell,
+.main-area {
+  background: #f5fbff;
+}
+
+body::before {
+  background:
+    linear-gradient(90deg, rgba(125, 199, 246, 0.11) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(125, 199, 246, 0.1) 1px, transparent 1px);
+  background-size: 96px 96px;
+}
+
+.access-shell {
+  background: radial-gradient(125% 125% at 50% 10%, #ffffff 42%, #e0f4ff 100%);
+}
+
+.sidebar,
+.topbar,
+.overview-command,
+.overview-kpi-card,
+.overview-chart-card,
+.stat-card,
+.panel,
+.record-card,
+.analysis-card,
+.assistant-panel,
+.report-history-item {
+  border-color: #d8e9f6;
+  box-shadow: 0 14px 34px rgba(48, 116, 154, 0.065);
+}
+
+.sidebar {
+  box-shadow: 14px 0 34px rgba(48, 116, 154, 0.06);
+}
+
+.brand-mark,
+.sidebar-avatar,
+.assistant-fab,
+.primary-button,
+.overview-kpi-card.primary,
+.session-avatar,
+.nav-list button.active,
+.assistant-message.user span,
+.assistant-message.user .assistant-bubble {
+  color: #0f3552;
+  background: linear-gradient(135deg, #c8edff 0%, #91d3f7 56%, #adc8ff 100%);
+  border-color: #9ed8f8;
+}
+
+.brand-mark {
+  box-shadow:
+    0 12px 24px rgba(91, 172, 220, 0.2),
+    0 0 0 7px #eaf7ff;
+}
+
+.sidebar-avatar {
+  color: #0f3552;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+}
+
+.assistant-fab,
+.primary-button {
+  box-shadow: 0 14px 28px rgba(91, 172, 220, 0.2);
+}
+
+.primary-button:hover,
+.assistant-fab:hover {
+  color: #0b2f49;
+  background: linear-gradient(135deg, #b5e6ff 0%, #78c8f2 56%, #9fbfff 100%);
+}
+
+.nav-list button.active {
+  box-shadow: 0 12px 24px rgba(91, 172, 220, 0.18);
+}
+
+.nav-list button.active svg,
+.assistant-message.user span,
+.assistant-message.user .assistant-bubble {
+  color: #0f3552;
+}
+
+.nav-list button:hover,
+.sidebar-tools button:hover,
+.ghost-button:hover,
+.icon-button:hover,
+.overview-chip-button:hover,
+.sidebar-item:hover,
+.sidebar-tools button:hover,
+.report-history-item:hover {
+  color: #226d9b;
+  background: #eaf7ff;
+  border-color: #bde4fb;
+}
+
+.user-pill,
+.overview-kpi-arrow,
+.stat-icon,
+.record-score,
+.secondary-button,
+.overview-chip-button.active,
+.answer-row span,
+.part-score-skill.listening,
+.report-history-item-meta span {
+  color: #226d9b !important;
+  background: #eaf7ff !important;
+  border-color: #bde4fb !important;
+}
+
+.secondary-button:hover {
+  background: #d9f0ff;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.drop-zone:focus,
+.drop-zone:focus-within,
+.assistant-input-row input:focus,
+.auth-input-row:focus-within {
+  border-color: #7cc7f6;
+  box-shadow: 0 0 0 4px rgba(124, 199, 246, 0.18);
+}
+
+.text-button,
+.sync-pill.ok,
+.markdown-box li::marker,
+.overview-table-row div:nth-child(1),
+.record-meta strong {
+  color: #2b8fca;
+}
+
+.overview-kpi-card::before {
+  background: radial-gradient(circle, rgba(124, 199, 246, 0.18), transparent 68%);
+}
+
+.overview-kpi-card.primary {
+  border-color: #9ed8f8;
+  box-shadow: 0 16px 34px rgba(91, 172, 220, 0.18);
+}
+
+.stat-card::after,
+.part-focus-meter span,
+.score-bar-fill,
+.record-score-bar span {
+  background: linear-gradient(90deg, #91d3f7, #adc8ff);
+}
+
+.activity-ring {
+  background:
+    conic-gradient(
+      #7cc7f6 0 var(--activity-open),
+      #9bdac7 var(--activity-open) 100%
+    );
+}
+
+.assistant-mark {
+  color: #0f3552;
+  background: linear-gradient(135deg, #c8edff, #91d3f7 58%, #adc8ff);
+  box-shadow: 0 14px 28px rgba(91, 172, 220, 0.18);
+}
+
+.assistant-close:hover {
+  color: #226d9b;
+  background: #eaf7ff;
+}
+
+.assistant-messages,
+.assistant-input-row,
+input,
+select,
+textarea,
+.markdown-box,
+.empty-state,
+.overview-table-row,
+.record-meta span,
+.drop-zone {
+  background: #f7fcff;
+  border-color: #d8e9f6;
+}
+
+.report-history-item.is-active {
+  background: #eaf7ff;
+  border-color: #bde4fb;
+  box-shadow: inset 3px 0 0 #7cc7f6;
+}
