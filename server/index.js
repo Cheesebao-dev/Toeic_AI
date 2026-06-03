@@ -41,7 +41,7 @@ const ALLOWED_FRONTEND_ORIGINS = new Set([...LOCAL_FRONTEND_ORIGINS, ...CONFIGUR
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || ALLOWED_FRONTEND_ORIGINS.has(origin)) {
+      if (!origin || ALLOWED_FRONTEND_ORIGINS.has(origin) || CONFIGURED_FRONTEND_ORIGINS.length === 0) {
         callback(null, true);
         return;
       }

@@ -84,7 +84,16 @@ const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea
 const PART_BAR_COLOR = '#2563eb';
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
 const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng'];
-const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const DEPLOYED_API_ORIGIN = 'https://toeic-ai-tracker.onrender.com';
+const API_BASE_URL = String(
+  import.meta.env.VITE_API_BASE_URL
+    || (typeof window !== 'undefined'
+      && window.location.hostname !== 'localhost'
+      && window.location.hostname !== '127.0.0.1'
+      && window.location.origin !== DEPLOYED_API_ORIGIN
+      ? DEPLOYED_API_ORIGIN
+      : ''),
+).replace(/\/+$/, '');
 
 const AUTH_VISUAL_SLIDES = [
   {
