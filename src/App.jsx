@@ -555,12 +555,17 @@ async function readJsonResponse(response) {
   try {
     return JSON.parse(text);
   } catch {
-    const error = new Error('Phản hồi máy chủ không phải JSON hợp lệ. Vui lòng thử lại sau khi bản deploy hoàn tất.');
+    const isHtml = /<!doctype html|<html[\s>]/i.test(text);
+    const statusText = response.status ? `HTTP ${response.status}` : 'không rõ trạng thái';
+    const error = new Error(
+      isHtml
+        ? `API backend đang trả HTML thay vì JSON (${statusText}). Có thể app đang gọi nhầm static host hoặc backend deploy chưa hoàn tất.`
+        : `API backend trả phản hồi không phải JSON (${statusText}).`,
+    );
     error.responseText = text;
     throw error;
   }
 }
-
 function isStateEmpty(state) {
   return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length;
 }

@@ -454,6 +454,19 @@ ${JSON.stringify((mistakes || []).filter((item) => item.status !== 'Đã khắc 
   }
 });
 
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `Không tìm thấy API ${req.method} ${req.originalUrl}.` });
+});
+
+app.use((error, req, res, next) => {
+  if (!req.path.startsWith('/api')) {
+    next(error);
+    return;
+  }
+
+  res.status(error.status || 500).json({ error: error.message || 'API backend gặp lỗi.' });
+});
+
 app.use(express.static(distPath));
 
 app.get(/.*/, (req, res, next) => {
