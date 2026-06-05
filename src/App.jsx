@@ -85,7 +85,9 @@ const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#2f6df0', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
 const PART_BAR_COLOR = '#2f6df0';
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
-const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng'];
+const VOCAB_MODE = 'Vocab';
+const VOCAB_GOAL_WORDS = 1000;
+const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng', VOCAB_MODE];
 const DEPLOYED_API_ORIGIN = 'https://toeic-ai-tracker.onrender.com';
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL
@@ -162,6 +164,7 @@ function createBlankSession() {
     title: '',
     mode: 'Full test',
     durationMinutes: '',
+    vocabularyWords: '',
     focus: 'Bình thường',
     notes: '',
     reflection: '',
@@ -476,6 +479,10 @@ function numberValue(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+function vocabularyWordValue(session) {
+  return clamp(numberValue(session?.vocabularyWords ?? session?.vocabWords), 0, VOCAB_GOAL_WORDS);
+}
+
 function hasInputValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== '';
 }
@@ -560,6 +567,8 @@ function calculateStats(sessions, mistakes) {
       acc.totalCorrect += calc.totalCorrect;
       acc.totalWrong += calc.wrong;
       acc.minutes += numberValue(session.durationMinutes);
+      acc.vocabularyWords += vocabularyWordValue(session);
+      if (session.mode === VOCAB_MODE && vocabularyWordValue(session)) acc.vocabSessions += 1;
       if (calc.totalScore) acc.latestScore = calc.totalScore;
       PARTS.forEach((part) => {
         const row = session.partScores?.[part.id] || {};
@@ -574,6 +583,8 @@ function calculateStats(sessions, mistakes) {
       totalCorrect: 0,
       totalWrong: 0,
       minutes: 0,
+      vocabularyWords: 0,
+      vocabSessions: 0,
       latestScore: 0,
       parts: PARTS.reduce((acc, part) => {
         acc[part.id] = { correct: 0, total: 0 };
@@ -618,6 +629,10 @@ function calculateStats(sessions, mistakes) {
     totalCorrect: totals.totalCorrect,
     totalWrong: totals.totalWrong,
     minutes: totals.minutes,
+    vocabularyWords: totals.vocabularyWords,
+    vocabSessions: totals.vocabSessions,
+    vocabularyGoal: VOCAB_GOAL_WORDS,
+    vocabularyProgress: Math.min(100, Math.round((totals.vocabularyWords / VOCAB_GOAL_WORDS) * 100)),
     accuracy: totals.totalQuestions ? Math.round((totals.totalCorrect / totals.totalQuestions) * 100) : 0,
     latestScore,
     partAccuracy,
@@ -1453,6 +1468,15 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
         </article>
 
         <article className="overview-kpi-card">
+          <button className="overview-kpi-arrow" type="button" aria-label="Mở nhật ký vocab" onClick={() => setActiveTab('journal')}>
+            <Brain size={17} />
+          </button>
+          <span>Vocab</span>
+          <strong>{stats.vocabularyWords}</strong>
+          <small>{stats.vocabularyProgress}% mục tiêu {stats.vocabularyGoal} từ</small>
+        </article>
+
+        <article className="overview-kpi-card">
           <button className="overview-kpi-arrow" type="button" aria-label="Xem tiến độ" onClick={() => setActiveTab('overview')}>
             <BarChart3 size={17} />
           </button>
@@ -1548,6 +1572,8 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
             {recentSessions.length ? (
               recentSessions.map((session) => {
                 const calc = calculateSession(session);
+                const vocabWords = vocabularyWordValue(session);
+                const isVocabSession = session.mode === VOCAB_MODE;
                 return (
                   <article className="overview-table-row" key={session.id}>
                     <div className="session-avatar">{session.title?.slice(0, 1).toUpperCase() || 'T'}</div>
@@ -1555,8 +1581,8 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
                       <strong>{session.title || 'Buổi luyện TOEIC'}</strong>
                       <span>{session.date} - {session.mode}</span>
                     </div>
-                    <span className="session-pill">{calc.accuracy}%</span>
-                    <strong className="session-score">{calc.totalScore || '-'}</strong>
+                    <span className="session-pill">{isVocabSession ? 'Vocab' : `${calc.accuracy}%`}</span>
+                    <strong className="session-score">{isVocabSession ? `${vocabWords} từ` : calc.totalScore || '-'}</strong>
                   </article>
                 );
               })
@@ -1662,10 +1688,14 @@ function Journal({ sessions, setSessions }) {
 
   function saveSession(event) {
     event.preventDefault();
+    const isVocabSession = draft.mode === VOCAB_MODE;
+    const vocabularyWords = isVocabSession ? clamp(numberValue(draft.vocabularyWords), 0, VOCAB_GOAL_WORDS) : 0;
     const record = {
       ...draft,
       id: editingId || uid(),
-      title: draft.title.trim() || 'Buổi luyện TOEIC',
+      title: draft.title.trim() || (isVocabSession ? 'Buổi học vocab' : 'Buổi luyện TOEIC'),
+      vocabularyWords: isVocabSession ? String(vocabularyWords) : '',
+      partScores: isVocabSession ? createBlankPartScores() : draft.partScores,
       updatedAt: new Date().toISOString(),
       createdAt: editingId ? draft.createdAt : new Date().toISOString(),
     };
@@ -1692,6 +1722,10 @@ function Journal({ sessions, setSessions }) {
   function deleteSession(id) {
     setSessions((current) => current.filter((item) => item.id !== id));
   }
+
+  const isVocabDraft = draft.mode === VOCAB_MODE;
+  const draftVocabularyWords = vocabularyWordValue(draft);
+  const draftVocabularyProgress = Math.min(100, Math.round((draftVocabularyWords / VOCAB_GOAL_WORDS) * 100));
 
   return (
     <div className="two-column">
@@ -1738,7 +1772,7 @@ function Journal({ sessions, setSessions }) {
                         aria-selected={draft.mode === mode}
                         className={`session-mode-option${draft.mode === mode ? ' selected' : ''}`}
                         onClick={() => {
-                          setDraft({ ...draft, mode });
+                          setDraft({ ...draft, mode, vocabularyWords: mode === VOCAB_MODE ? draft.vocabularyWords : '' });
                           setModeMenuOpen(false);
                         }}
                       >
@@ -1754,84 +1788,109 @@ function Journal({ sessions, setSessions }) {
             </Field>
           </div>
 
-          <div className="part-score-grid">
-            <div className="part-score-header" aria-hidden="true">
-              <span>Part</span>
-              <span>Kỹ năng</span>
-              <span>Tổng câu</span>
-              <span>Số câu đúng</span>
-            </div>
-            {PARTS.map((part) => {
-              const selectedCorrect = draft.partScores[part.id]?.correct ?? '';
-              const hasSelectedCorrect = hasInputValue(selectedCorrect);
-              const isOpen = openPartId === part.id;
-              const menuId = `correct-menu-${part.id.replace(/\s+/g, '-').toLowerCase()}`;
-              return (
-                <div key={part.id} className={`part-score-row${isOpen ? ' is-menu-open' : ''}`}>
-                  <div className="part-score-part">
-                    <strong>{part.id}</strong>
-                  </div>
-                  <div className="part-score-skill-cell">
-                    <span className={`part-score-skill ${part.skill.toLowerCase()}`}>{part.skill}</span>
-                  </div>
-                  <span className="part-score-total">{part.totalQuestions} câu</span>
-                  <div className={`part-score-picker${isOpen ? ' open' : ''}`}>
-                    <button
-                      type="button"
-                      className="part-score-trigger"
-                      aria-label={`Chọn số câu đúng ${part.id}`}
-                      aria-haspopup="listbox"
-                      aria-expanded={isOpen}
-                      aria-controls={menuId}
-                      onClick={() => {
-                        setOpenPartId(isOpen ? null : part.id);
-                        setModeMenuOpen(false);
-                      }}
-                    >
-                      <span className={hasSelectedCorrect ? 'part-score-value' : 'part-score-placeholder'}>
-                        {hasSelectedCorrect ? String(selectedCorrect) : SCORE_SELECT_PLACEHOLDER}
-                      </span>
-                      <ChevronDown size={16} />
-                    </button>
-                    {isOpen && (
-                      <div className="part-score-menu" id={menuId} role="listbox">
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={!hasSelectedCorrect}
-                          className={`part-score-option${!hasSelectedCorrect ? ' selected' : ''}`}
-                          onClick={() => {
-                            updatePart(part.id, 'correct', '');
-                            setOpenPartId(null);
-                          }}
-                        >
-                          {SCORE_SELECT_PLACEHOLDER}
-                        </button>
-                        {Array.from({ length: part.totalQuestions + 1 }, (_, count) => {
-                          const isSelected = String(selectedCorrect) === String(count);
-                          return (
-                            <button
-                              key={count}
-                              type="button"
-                              role="option"
-                              aria-selected={isSelected}
-                              className={`part-score-option${isSelected ? ' selected' : ''}`}
-                              onClick={() => {
-                                updatePart(part.id, 'correct', String(count));
-                                setOpenPartId(null);
-                              }}
-                            >
-                              {count}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+          {isVocabDraft ? (
+            <div className="vocab-session-box">
+              <Field label="Số từ đã học">
+                <input
+                  type="number"
+                  min="1"
+                  max={VOCAB_GOAL_WORDS}
+                  value={draft.vocabularyWords || ''}
+                  onChange={(event) => setDraft({ ...draft, vocabularyWords: event.target.value })}
+                  placeholder="100"
+                  required
+                />
+              </Field>
+              <div className="vocab-progress-preview">
+                <div>
+                  <strong>{draftVocabularyWords}</strong>
+                  <span>/{VOCAB_GOAL_WORDS} từ</span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="vocab-progress-bar" style={{ '--vocab-progress': `${draftVocabularyProgress}%` }}>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="part-score-grid">
+              <div className="part-score-header" aria-hidden="true">
+                <span>Part</span>
+                <span>Kỹ năng</span>
+                <span>Tổng câu</span>
+                <span>Số câu đúng</span>
+              </div>
+              {PARTS.map((part) => {
+                const selectedCorrect = draft.partScores[part.id]?.correct ?? '';
+                const hasSelectedCorrect = hasInputValue(selectedCorrect);
+                const isOpen = openPartId === part.id;
+                const menuId = `correct-menu-${part.id.replace(/\s+/g, '-').toLowerCase()}`;
+                return (
+                  <div key={part.id} className={`part-score-row${isOpen ? ' is-menu-open' : ''}`}>
+                    <div className="part-score-part">
+                      <strong>{part.id}</strong>
+                    </div>
+                    <div className="part-score-skill-cell">
+                      <span className={`part-score-skill ${part.skill.toLowerCase()}`}>{part.skill}</span>
+                    </div>
+                    <span className="part-score-total">{part.totalQuestions} câu</span>
+                    <div className={`part-score-picker${isOpen ? ' open' : ''}`}>
+                      <button
+                        type="button"
+                        className="part-score-trigger"
+                        aria-label={`Chọn số câu đúng ${part.id}`}
+                        aria-haspopup="listbox"
+                        aria-expanded={isOpen}
+                        aria-controls={menuId}
+                        onClick={() => {
+                          setOpenPartId(isOpen ? null : part.id);
+                          setModeMenuOpen(false);
+                        }}
+                      >
+                        <span className={hasSelectedCorrect ? 'part-score-value' : 'part-score-placeholder'}>
+                          {hasSelectedCorrect ? String(selectedCorrect) : SCORE_SELECT_PLACEHOLDER}
+                        </span>
+                        <ChevronDown size={16} />
+                      </button>
+                      {isOpen && (
+                        <div className="part-score-menu" id={menuId} role="listbox">
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={!hasSelectedCorrect}
+                            className={`part-score-option${!hasSelectedCorrect ? ' selected' : ''}`}
+                            onClick={() => {
+                              updatePart(part.id, 'correct', '');
+                              setOpenPartId(null);
+                            }}
+                          >
+                            {SCORE_SELECT_PLACEHOLDER}
+                          </button>
+                          {Array.from({ length: part.totalQuestions + 1 }, (_, count) => {
+                            const isSelected = String(selectedCorrect) === String(count);
+                            return (
+                              <button
+                                key={count}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                className={`part-score-option${isSelected ? ' selected' : ''}`}
+                                onClick={() => {
+                                  updatePart(part.id, 'correct', String(count));
+                                  setOpenPartId(null);
+                                }}
+                              >
+                                {count}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <Field label="Ghi chú">
             <textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} rows={3} />
@@ -1855,6 +1914,8 @@ function Journal({ sessions, setSessions }) {
           {sessions.length ? (
             sessions.map((session) => {
               const calc = calculateSession(session);
+              const vocabWords = vocabularyWordValue(session);
+              const isVocabSession = session.mode === VOCAB_MODE;
               return (
                 <article className="record-card" key={session.id}>
                   <div className="record-main">
@@ -1862,11 +1923,20 @@ function Journal({ sessions, setSessions }) {
                       <strong>{session.title}</strong>
                       <span>{session.date} · {session.mode}</span>
                     </div>
-                    <div className="record-score">{calc.totalScore || calc.accuracy}</div>
+                    <div className="record-score">{isVocabSession ? vocabWords : calc.totalScore || calc.accuracy}</div>
                   </div>
                   <div className="record-meta">
-                    <span>{calc.totalCorrect}/{calc.totalQuestions} câu</span>
-                    <span>{calc.accuracy}%</span>
+                    {isVocabSession ? (
+                      <>
+                        <span>{vocabWords}/{VOCAB_GOAL_WORDS} từ</span>
+                        <span>{Math.min(100, Math.round((vocabWords / VOCAB_GOAL_WORDS) * 100))}% mục tiêu</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>{calc.totalCorrect}/{calc.totalQuestions} câu</span>
+                        <span>{calc.accuracy}%</span>
+                      </>
+                    )}
                     <span>{numberValue(session.durationMinutes)} phút</span>
                   </div>
                   {session.reflection && <p>{session.reflection}</p>}

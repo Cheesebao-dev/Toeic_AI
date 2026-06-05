@@ -2060,6 +2060,54 @@ textarea:focus {
   border-radius: var(--radius);
 }
 
+.vocab-session-box {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+}
+
+.vocab-progress-preview {
+  display: grid;
+  gap: 9px;
+}
+
+.vocab-progress-preview > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vocab-progress-preview strong {
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.vocab-progress-preview span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.vocab-progress-bar {
+  height: 10px;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.vocab-progress-bar span {
+  display: block;
+  width: var(--vocab-progress);
+  height: 100%;
+  background: #0f766e;
+  border-radius: inherit;
+}
+
 .part-score-header,
 .part-score-row {
   display: grid;
@@ -3625,7 +3673,7 @@ textarea:focus {
 
 .overview-kpi-grid {
   display: grid;
-  grid-template-columns: 1.08fr repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 16px;
 }
 
