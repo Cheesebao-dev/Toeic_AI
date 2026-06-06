@@ -29,6 +29,7 @@ import {
   Sparkles,
   Target,
   Trash2,
+  Upload,
   UserRound,
   X,
 } from 'lucide-react';
@@ -524,6 +525,10 @@ function estimateToeicSectionScore(correct, skill) {
   return table[index] || 5;
 }
 
+function isCompleteToeicSection(section) {
+  return section.total === 100;
+}
+
 function sumPartScores(partScores, skill) {
   return PARTS.filter((part) => part.skill === skill).reduce(
     (acc, part) => {
@@ -542,8 +547,10 @@ function calculateSession(session) {
   const reading = sumPartScores(session.partScores, 'Reading');
   const totalCorrect = listening.correct + reading.correct;
   const totalQuestions = listening.total + reading.total;
-  const listeningScore = listening.total ? estimateToeicSectionScore(listening.correct, 'Listening') : 0;
-  const readingScore = reading.total ? estimateToeicSectionScore(reading.correct, 'Reading') : 0;
+  const hasListeningScore = isCompleteToeicSection(listening);
+  const hasReadingScore = isCompleteToeicSection(reading);
+  const listeningScore = hasListeningScore ? estimateToeicSectionScore(listening.correct, 'Listening') : 0;
+  const readingScore = hasReadingScore ? estimateToeicSectionScore(reading.correct, 'Reading') : 0;
   return {
     listening,
     reading,
@@ -551,6 +558,8 @@ function calculateSession(session) {
     totalQuestions,
     wrong: Math.max(0, totalQuestions - totalCorrect),
     accuracy: totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+    hasListeningScore,
+    hasReadingScore,
     listeningScore,
     readingScore,
     totalScore: listeningScore + readingScore,
@@ -615,12 +624,13 @@ function calculateStats(sessions, mistakes, vocabTopics = []) {
     Object.entries(mistakeTypeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Chưa có dữ liệu';
   const openMistakes = mistakes.filter((item) => item.status !== 'Đã khắc phục').length;
   const fixedMistakes = mistakes.filter((item) => item.status === 'Đã khắc phục').length;
-  const latestScoredSession =
+  const latestSessionCalcs =
     [...sessions]
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-      .map((session) => calculateSession(session))
-      .find((calc) => calc.totalScore > 0);
-  const latestScore = latestScoredSession?.totalScore || 0;
+      .map((session) => calculateSession(session));
+  const latestListeningScore = latestSessionCalcs.find((calc) => calc.hasListeningScore)?.listeningScore || 0;
+  const latestReadingScore = latestSessionCalcs.find((calc) => calc.hasReadingScore)?.readingScore || 0;
+  const latestScore = latestListeningScore + latestReadingScore;
   const vocabStats = getVocabStats(vocabTopics);
   const learnedVocabularyWords = totals.vocabularyWords + vocabStats.learned;
 
@@ -640,8 +650,8 @@ function calculateStats(sessions, mistakes, vocabTopics = []) {
     vocabularyProgress: Math.min(100, Math.round((learnedVocabularyWords / VOCAB_GOAL_WORDS) * 100)),
     accuracy: totals.totalQuestions ? Math.round((totals.totalCorrect / totals.totalQuestions) * 100) : 0,
     latestScore,
-    latestListeningScore: latestScoredSession?.listeningScore || 0,
-    latestReadingScore: latestScoredSession?.readingScore || 0,
+    latestListeningScore,
+    latestReadingScore,
     partAccuracy,
     weakestPart,
     topMistakeType,
@@ -1577,7 +1587,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
                       <span>{session.date} - {session.mode}</span>
                     </div>
                     <span className="session-pill">{isVocabSession ? 'Vocab' : `${calc.accuracy}%`}</span>
-                    <strong className="session-score">{isVocabSession ? `${vocabWords} từ` : calc.totalScore || '-'}</strong>
+                    <strong className="session-score">{isVocabSession ? `${vocabWords} từ` : calc.totalScore || `${calc.accuracy}%`}</strong>
                   </article>
                 );
               })
