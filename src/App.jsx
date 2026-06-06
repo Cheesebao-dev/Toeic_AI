@@ -529,6 +529,56 @@ function isCompleteToeicSection(section) {
   return section.total === 100;
 }
 
+function sortedSessionsNewestFirst(sessions) {
+  return sessions
+    .map((session, index) => ({ session, index }))
+    .sort((a, b) => {
+      const aTime = Date.parse(a.session.updatedAt || a.session.createdAt || a.session.date || '');
+      const bTime = Date.parse(b.session.updatedAt || b.session.createdAt || b.session.date || '');
+      const aValue = Number.isFinite(aTime) ? aTime : 0;
+      const bValue = Number.isFinite(bTime) ? bTime : 0;
+      return bValue - aValue || a.index - b.index;
+    })
+    .map((item) => item.session);
+}
+
+function getPartAttempt(session, part) {
+  const row = session.partScores?.[part.id] || {};
+  if (!isPartAttempted(row)) return null;
+  const total = fixedPartTotal(row, part);
+  return {
+    partId: part.id,
+    correct: clamp(numberValue(row.correct), 0, total),
+    total,
+  };
+}
+
+function calculateLatestSkillScore(sessions, skill) {
+  const skillParts = PARTS.filter((part) => part.skill === skill);
+  const latestByPart = new Map();
+
+  sortedSessionsNewestFirst(sessions).forEach((session) => {
+    skillParts.forEach((part) => {
+      if (latestByPart.has(part.id)) return;
+      const attempt = getPartAttempt(session, part);
+      if (attempt) latestByPart.set(part.id, attempt);
+    });
+  });
+
+  if (latestByPart.size !== skillParts.length) return 0;
+
+  const section = [...latestByPart.values()].reduce(
+    (acc, attempt) => {
+      acc.correct += attempt.correct;
+      acc.total += attempt.total;
+      return acc;
+    },
+    { correct: 0, total: 0 },
+  );
+
+  return isCompleteToeicSection(section) ? estimateToeicSectionScore(section.correct, skill) : 0;
+}
+
 function sumPartScores(partScores, skill) {
   return PARTS.filter((part) => part.skill === skill).reduce(
     (acc, part) => {
@@ -624,12 +674,8 @@ function calculateStats(sessions, mistakes, vocabTopics = []) {
     Object.entries(mistakeTypeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Chưa có dữ liệu';
   const openMistakes = mistakes.filter((item) => item.status !== 'Đã khắc phục').length;
   const fixedMistakes = mistakes.filter((item) => item.status === 'Đã khắc phục').length;
-  const latestSessionCalcs =
-    [...sessions]
-      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-      .map((session) => calculateSession(session));
-  const latestListeningScore = latestSessionCalcs.find((calc) => calc.hasListeningScore)?.listeningScore || 0;
-  const latestReadingScore = latestSessionCalcs.find((calc) => calc.hasReadingScore)?.readingScore || 0;
+  const latestListeningScore = calculateLatestSkillScore(sessions, 'Listening');
+  const latestReadingScore = calculateLatestSkillScore(sessions, 'Reading');
   const latestScore = latestListeningScore + latestReadingScore;
   const vocabStats = getVocabStats(vocabTopics);
   const learnedVocabularyWords = totals.vocabularyWords + vocabStats.learned;
