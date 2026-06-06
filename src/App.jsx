@@ -3,12 +3,12 @@ import {
   AlertCircle,
   BarChart3,
   Bot,
+  BookOpen,
   Brain,
   CalendarDays,
   ChevronDown,
   CheckCircle2,
   ClipboardList,
-  Download,
   Edit3,
   Eye,
   EyeOff,
@@ -29,7 +29,6 @@ import {
   Sparkles,
   Target,
   Trash2,
-  Upload,
   UserRound,
   X,
 } from 'lucide-react';
@@ -47,10 +46,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import Vocab, {
+  createDefaultVocabTopics,
+  getVocabStats,
+  normalizeVocabTopics,
+} from './Vocab.jsx';
 
 const STORAGE_KEY = 'toeic-tracker-ai-state-v1';
 const AUTH_TOKEN_KEY = 'toeic-tracker-ai-auth-token';
-const EMPTY_STATE = { sessions: [], mistakes: [], reports: [] };
+const EMPTY_STATE = { sessions: [], mistakes: [], reports: [], vocabTopics: [] };
 
 const PARTS = [
   { id: 'Part 1', skill: 'Listening', totalQuestions: 6 },
@@ -82,12 +86,26 @@ const MISTAKE_TYPES = [
 
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
-const PIE_COLORS = ['#2f6df0', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9', '#475569'];
-const PART_BAR_COLOR = '#2f6df0';
+const PIE_COLORS = ['#052659', '#5483B3', '#7DA0CA', '#C1E8FF', '#021024', '#8FB7D8', '#385F8A'];
+const PART_BAR_COLOR = '#052659';
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
 const VOCAB_MODE = 'Vocab';
 const VOCAB_GOAL_WORDS = 1000;
 const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng', VOCAB_MODE];
+const LISTENING_SCORE_TABLE = [
+  5, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130,
+  135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245,
+  250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360,
+  365, 370, 375, 380, 385, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440, 445, 450, 455, 460, 465, 470, 475, 480,
+  485, 490, 495, 495, 495, 495, 495,
+];
+const READING_SCORE_TABLE = [
+  5, 5, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125,
+  130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240,
+  245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355,
+  360, 365, 370, 375, 380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440, 445, 450, 455, 460, 465, 470,
+  475, 480, 485, 490, 495,
+];
 const DEPLOYED_API_ORIGIN = 'https://toeic-ai-tracker.onrender.com';
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL
@@ -167,6 +185,7 @@ function createBlankSession() {
     vocabularyWords: '',
     focus: 'Bình thường',
     notes: '',
+    mistakeTags: [],
     reflection: '',
     partScores: createBlankPartScores(),
   };
@@ -499,31 +518,10 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function estimateToeicSectionScore(correct, total) {
-  if (!total || !correct) return 5;
-  const ratio = clamp(correct / total, 0, 1);
-  const table = [
-    [0, 5],
-    [0.1, 60],
-    [0.2, 115],
-    [0.3, 170],
-    [0.4, 225],
-    [0.5, 280],
-    [0.6, 335],
-    [0.7, 390],
-    [0.8, 435],
-    [0.9, 475],
-    [1, 495],
-  ];
-  for (let i = 1; i < table.length; i += 1) {
-    const [ratioEnd, scoreEnd] = table[i];
-    const [ratioStart, scoreStart] = table[i - 1];
-    if (ratio <= ratioEnd) {
-      const progress = (ratio - ratioStart) / (ratioEnd - ratioStart);
-      return Math.round((scoreStart + progress * (scoreEnd - scoreStart)) / 5) * 5;
-    }
-  }
-  return 495;
+function estimateToeicSectionScore(correct, skill) {
+  const table = skill === 'Listening' ? LISTENING_SCORE_TABLE : READING_SCORE_TABLE;
+  const index = clamp(Math.round(numberValue(correct)), 0, 100);
+  return table[index] || 5;
 }
 
 function sumPartScores(partScores, skill) {
@@ -544,8 +542,8 @@ function calculateSession(session) {
   const reading = sumPartScores(session.partScores, 'Reading');
   const totalCorrect = listening.correct + reading.correct;
   const totalQuestions = listening.total + reading.total;
-  const listeningScore = listening.total ? estimateToeicSectionScore(listening.correct, listening.total) : 0;
-  const readingScore = reading.total ? estimateToeicSectionScore(reading.correct, reading.total) : 0;
+  const listeningScore = listening.total ? estimateToeicSectionScore(listening.correct, 'Listening') : 0;
+  const readingScore = reading.total ? estimateToeicSectionScore(reading.correct, 'Reading') : 0;
   return {
     listening,
     reading,
@@ -559,7 +557,7 @@ function calculateSession(session) {
   };
 }
 
-function calculateStats(sessions, mistakes) {
+function calculateStats(sessions, mistakes, vocabTopics = []) {
   const totals = sessions.reduce(
     (acc, session) => {
       const calc = calculateSession(session);
@@ -617,11 +615,14 @@ function calculateStats(sessions, mistakes) {
     Object.entries(mistakeTypeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Chưa có dữ liệu';
   const openMistakes = mistakes.filter((item) => item.status !== 'Đã khắc phục').length;
   const fixedMistakes = mistakes.filter((item) => item.status === 'Đã khắc phục').length;
-  const latestScore =
+  const latestScoredSession =
     [...sessions]
       .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-      .map((session) => calculateSession(session).totalScore)
-      .find((score) => score > 0) || 0;
+      .map((session) => calculateSession(session))
+      .find((calc) => calc.totalScore > 0);
+  const latestScore = latestScoredSession?.totalScore || 0;
+  const vocabStats = getVocabStats(vocabTopics);
+  const learnedVocabularyWords = totals.vocabularyWords + vocabStats.learned;
 
   return {
     sessions: sessions.length,
@@ -629,12 +630,18 @@ function calculateStats(sessions, mistakes) {
     totalCorrect: totals.totalCorrect,
     totalWrong: totals.totalWrong,
     minutes: totals.minutes,
-    vocabularyWords: totals.vocabularyWords,
+    vocabularyWords: learnedVocabularyWords,
+    vocabularyTrackedWords: vocabStats.total,
+    vocabularyReviewWords: vocabStats.needsReview,
+    vocabularyTopics: vocabStats.topics,
+    vocabularyStudyCount: vocabStats.reviewCount,
     vocabSessions: totals.vocabSessions,
     vocabularyGoal: VOCAB_GOAL_WORDS,
-    vocabularyProgress: Math.min(100, Math.round((totals.vocabularyWords / VOCAB_GOAL_WORDS) * 100)),
+    vocabularyProgress: Math.min(100, Math.round((learnedVocabularyWords / VOCAB_GOAL_WORDS) * 100)),
     accuracy: totals.totalQuestions ? Math.round((totals.totalCorrect / totals.totalQuestions) * 100) : 0,
     latestScore,
+    latestListeningScore: latestScoredSession?.listeningScore || 0,
+    latestReadingScore: latestScoredSession?.readingScore || 0,
     partAccuracy,
     weakestPart,
     topMistakeType,
@@ -648,18 +655,27 @@ function stateKey(userId) {
   return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
 }
 
+function withDefaultVocabTopics(state) {
+  const vocabTopics = Array.isArray(state?.vocabTopics) && state.vocabTopics.length
+    ? normalizeVocabTopics(state.vocabTopics)
+    : createDefaultVocabTopics();
+
+  return {
+    sessions: Array.isArray(state?.sessions) ? state.sessions : [],
+    mistakes: Array.isArray(state?.mistakes) ? state.mistakes : [],
+    reports: Array.isArray(state?.reports) ? state.reports : [],
+    vocabTopics,
+  };
+}
+
 function loadState(userId) {
   try {
     const raw = localStorage.getItem(stateKey(userId));
-    if (!raw) return { ...EMPTY_STATE };
+    if (!raw) return withDefaultVocabTopics(EMPTY_STATE);
     const parsed = JSON.parse(raw);
-    return {
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-      mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes : [],
-      reports: Array.isArray(parsed.reports) ? parsed.reports : [],
-    };
+    return withDefaultVocabTopics(parsed);
   } catch {
-    return { ...EMPTY_STATE };
+    return withDefaultVocabTopics(EMPTY_STATE);
   }
 }
 
@@ -745,7 +761,7 @@ async function refreshAuthSession() {
   return payload.user;
 }
 function isStateEmpty(state) {
-  return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length;
+  return !state.sessions?.length && !state.mistakes?.length && !state.reports?.length && !state.vocabTopics?.length;
 }
 
 function StatCard({ icon: Icon, label, value, detail, tone = 'blue' }) {
@@ -1170,10 +1186,11 @@ function IconButton({ title, children, className = '', ...props }) {
   );
 }
 
-function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, onImportClick, onLogout, user }) {
+function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onLogout, user }) {
   const navItems = [
     { id: 'overview', label: 'Tổng quan', detail: 'Dashboard', icon: LayoutDashboard },
     { id: 'journal', label: 'Nhật ký', detail: 'Buổi luyện đề', icon: ClipboardList },
+    { id: 'vocab', label: 'Vocab', detail: 'Quiz từ vựng', icon: BookOpen },
     { id: 'mistakes', label: 'Sổ lỗi sai', detail: 'Review câu sai', icon: NotebookTabs },
     { id: 'ai', label: 'AI phân tích', detail: 'Gemini feedback', icon: Sparkles },
     { id: 'reports', label: 'Báo cáo', detail: 'Tiến độ học', icon: FileText },
@@ -1239,20 +1256,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onExport, o
       </div>
 
       <div className="sidebar-footer">
-        <span className="sidebar-section-title" aria-hidden={collapsed}>Data</span>
         <div className="sidebar-tools">
-          <button onClick={onExport} title="Xuất dữ liệu">
-            <span className="sidebar-icon-frame">
-              <Download size={18} />
-            </span>
-            <span className="sidebar-tool-label" aria-hidden={collapsed}>Xuất JSON</span>
-          </button>
-          <button onClick={onImportClick} title="Nhập dữ liệu">
-            <span className="sidebar-icon-frame">
-              <Upload size={18} />
-            </span>
-            <span className="sidebar-tool-label" aria-hidden={collapsed}>Nhập JSON</span>
-          </button>
           <button className="danger" onClick={onLogout} title="Đăng xuất">
             <span className="sidebar-icon-frame">
               <LogOut size={18} />
@@ -1327,13 +1331,13 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
           <div className="chart-box">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={scoreHistory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#C1E8FF" />
                 <XAxis dataKey="date" />
                 <YAxis yAxisId="left" domain={[0, 990]} />
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
                 <Tooltip />
-                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#2f6df0" strokeWidth={3} dot={{ r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#22a783" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="left" type="monotone" dataKey="score" stroke="#052659" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="right" type="monotone" dataKey="accuracy" stroke="#5483B3" strokeWidth={3} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -1350,7 +1354,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
         <div className="chart-box">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={stats.partAccuracy}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#C1E8FF" />
               <XAxis dataKey="part" />
               <YAxis domain={[0, 100]} />
               <Tooltip />
@@ -1414,8 +1418,8 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
   const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2].score || 0 : 0;
   const scoreDelta = stats.latestScore && previousScore ? stats.latestScore - previousScore : 0;
   const reviewData = [
-    { name: 'Cần xử lý', value: stats.openMistakes, color: '#2f6df0' },
-    { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#22a783' },
+    { name: 'Cần xử lý', value: stats.openMistakes, color: '#052659' },
+    { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#7DA0CA' },
   ];
   const reviewTotal = reviewData.reduce((sum, item) => sum + item.value, 0);
   const openMistakePercent = reviewTotal ? Math.round((stats.openMistakes / reviewTotal) * 100) : 0;
@@ -1451,11 +1455,11 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           </button>
           <span>Điểm ước tính</span>
           <strong>{stats.latestScore || 0}</strong>
-          <small>
-            {scoreDelta
-              ? `${scoreDelta > 0 ? '+' : ''}${scoreDelta} so với lần trước`
-              : 'Mục tiêu 990 TOEIC'}
-          </small>
+          <div className="score-breakdown">
+            <small>Listening <b>{stats.latestListeningScore || 0}</b></small>
+            <small>Reading <b>{stats.latestReadingScore || 0}</b></small>
+          </div>
+          {scoreDelta !== 0 && <em>{scoreDelta > 0 ? '+' : ''}{scoreDelta} so với lần trước</em>}
         </article>
 
         <article className="overview-kpi-card">
@@ -1468,21 +1472,12 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
         </article>
 
         <article className="overview-kpi-card">
-          <button className="overview-kpi-arrow" type="button" aria-label="Mở nhật ký vocab" onClick={() => setActiveTab('journal')}>
+          <button className="overview-kpi-arrow" type="button" aria-label="Mở vocab" onClick={() => setActiveTab('vocab')}>
             <Brain size={17} />
           </button>
           <span>Vocab</span>
           <strong>{stats.vocabularyWords}</strong>
-          <small>{stats.vocabularyProgress}% mục tiêu {stats.vocabularyGoal} từ</small>
-        </article>
-
-        <article className="overview-kpi-card">
-          <button className="overview-kpi-arrow" type="button" aria-label="Xem tiến độ" onClick={() => setActiveTab('overview')}>
-            <BarChart3 size={17} />
-          </button>
-          <span>Accuracy</span>
-          <strong>{stats.accuracy}%</strong>
-          <small>{stats.totalCorrect}/{stats.totalQuestions} câu đúng</small>
+          <small>{stats.vocabularyWords}/{stats.vocabularyGoal} đã thuộc · {stats.vocabularyTrackedWords || 0} từ / {stats.vocabularyTopics || 0} topic</small>
         </article>
 
         <article className="overview-kpi-card margin-card">
@@ -1508,7 +1503,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
             <div className="overview-line-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.partAccuracy}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0dce7" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#C1E8FF" />
                   <XAxis dataKey="part" />
                   <YAxis domain={[0, 100]} />
                   <Tooltip />
@@ -1686,15 +1681,28 @@ function Journal({ sessions, setSessions }) {
     }));
   }
 
+  function toggleMistakeTag(tag) {
+    setDraft((current) => {
+      const currentTags = Array.isArray(current.mistakeTags) ? current.mistakeTags : [];
+      const hasTag = currentTags.includes(tag);
+      return {
+        ...current,
+        mistakeTags: hasTag ? currentTags.filter((item) => item !== tag) : [...currentTags, tag],
+      };
+    });
+  }
+
   function saveSession(event) {
     event.preventDefault();
     const isVocabSession = draft.mode === VOCAB_MODE;
     const vocabularyWords = isVocabSession ? clamp(numberValue(draft.vocabularyWords), 0, VOCAB_GOAL_WORDS) : 0;
+    const mistakeTags = Array.isArray(draft.mistakeTags) ? draft.mistakeTags.filter((tag) => MISTAKE_TYPES.includes(tag)) : [];
     const record = {
       ...draft,
       id: editingId || uid(),
       title: draft.title.trim() || (isVocabSession ? 'Buổi học vocab' : 'Buổi luyện TOEIC'),
       vocabularyWords: isVocabSession ? String(vocabularyWords) : '',
+      mistakeTags,
       partScores: isVocabSession ? createBlankPartScores() : draft.partScores,
       updatedAt: new Date().toISOString(),
       createdAt: editingId ? draft.createdAt : new Date().toISOString(),
@@ -1713,6 +1721,7 @@ function Journal({ sessions, setSessions }) {
     setDraft({
       ...createBlankSession(),
       ...session,
+      mistakeTags: Array.isArray(session.mistakeTags) ? session.mistakeTags : [],
       partScores: { ...createBlankPartScores(), ...(session.partScores || {}) },
     });
     setOpenPartId(null);
@@ -1892,8 +1901,23 @@ function Journal({ sessions, setSessions }) {
             </div>
           )}
 
-          <Field label="Ghi chú">
-            <textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} rows={3} />
+          <Field label="Lỗi sai">
+            <div className="mistake-tag-picker">
+              {MISTAKE_TYPES.map((tag) => {
+                const selected = Array.isArray(draft.mistakeTags) && draft.mistakeTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={selected ? 'selected' : ''}
+                    aria-pressed={selected}
+                    onClick={() => toggleMistakeTag(tag)}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Kinh nghiệm">
             <textarea value={draft.reflection} onChange={(event) => setDraft({ ...draft, reflection: event.target.value })} rows={3} />
@@ -1939,6 +1963,11 @@ function Journal({ sessions, setSessions }) {
                     )}
                     <span>{numberValue(session.durationMinutes)} phút</span>
                   </div>
+                  {Array.isArray(session.mistakeTags) && session.mistakeTags.length > 0 && (
+                    <div className="record-tags">
+                      {session.mistakeTags.map((tag) => <span key={tag}>{tag}</span>)}
+                    </div>
+                  )}
                   {session.reflection && <p>{session.reflection}</p>}
                   <div className="card-actions">
                     <IconButton title="Sửa" onClick={() => editSession(session)}>
@@ -2693,7 +2722,7 @@ function AssistantWidget({ stats, sessions, mistakes, activeTab, hasGeminiKey = 
 }
 
 export default function App() {
-  const [data, setData] = useState({ ...EMPTY_STATE });
+  const [data, setData] = useState({ ...EMPTY_STATE, vocabTopics: createDefaultVocabTopics() });
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsed, setCollapsed] = useState(false);
   const [aiDraft, setAiDraft] = useState(null);
@@ -2706,7 +2735,6 @@ export default function App() {
     hasGeminiKey: false,
     error: '',
   });
-  const importRef = useRef(null);
 
   useEffect(() => {
     if (!auth.user) return undefined;
@@ -2807,11 +2835,12 @@ export default function App() {
       sessions: Array.isArray(payload.sessions) ? payload.sessions : [],
       mistakes: Array.isArray(payload.mistakes) ? payload.mistakes : [],
       reports: Array.isArray(payload.reports) ? payload.reports : [],
+      vocabTopics: Array.isArray(payload.vocabTopics) ? normalizeVocabTopics(payload.vocabTopics) : [],
     };
     const userCachedState = loadState(user.id);
     const legacyCachedState = loadState();
     const cachedState = !isStateEmpty(userCachedState) ? userCachedState : legacyCachedState;
-    const nextState = isStateEmpty(remoteState) && !isStateEmpty(cachedState) ? cachedState : remoteState;
+    const nextState = withDefaultVocabTopics(isStateEmpty(remoteState) && !isStateEmpty(cachedState) ? cachedState : remoteState);
 
     setData(nextState);
     saveLocalState(user.id, nextState);
@@ -2834,7 +2863,10 @@ export default function App() {
     }
   }
 
-  const stats = useMemo(() => calculateStats(data.sessions, data.mistakes), [data.sessions, data.mistakes]);
+  const stats = useMemo(
+    () => calculateStats(data.sessions, data.mistakes, data.vocabTopics),
+    [data.sessions, data.mistakes, data.vocabTopics],
+  );
 
   function setSessions(updater) {
     setData((current) => ({ ...current, sessions: typeof updater === 'function' ? updater(current.sessions) : updater }));
@@ -2848,38 +2880,17 @@ export default function App() {
     setData((current) => ({ ...current, reports: typeof updater === 'function' ? updater(current.reports) : updater }));
   }
 
+  function setVocabTopics(updater) {
+    setData((current) => ({
+      ...current,
+      vocabTopics: typeof updater === 'function' ? updater(current.vocabTopics) : updater,
+    }));
+  }
+
   function saveAIMistake(record) {
     setMistakes((current) => [record, ...current]);
     setAiDraft(null);
     setActiveTab('mistakes');
-  }
-
-  function exportData() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `toeic-tracker-${today()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importData(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      setData({
-        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-        mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes : [],
-        reports: Array.isArray(parsed.reports) ? parsed.reports : [],
-      });
-    } catch {
-      window.alert('File JSON không hợp lệ.');
-    } finally {
-      event.target.value = '';
-    }
   }
 
   async function handleAuthSubmit(mode, form) {
@@ -2907,7 +2918,7 @@ export default function App() {
     clearStoredAuthToken();
     setAuth({ checked: true, user: null, error: '', loading: false });
     setBackend((current) => ({ ...current, syncEnabled: false, saving: false }));
-    setData({ ...EMPTY_STATE });
+    setData({ ...EMPTY_STATE, vocabTopics: createDefaultVocabTopics() });
   }
 
   if (!auth.checked) {
@@ -2925,12 +2936,9 @@ export default function App() {
         setActiveTab={setActiveTab}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
-        onExport={exportData}
-        onImportClick={() => importRef.current?.click()}
         onLogout={logout}
         user={auth.user}
       />
-      <input ref={importRef} className="hidden-input" type="file" accept="application/json" onChange={importData} />
 
       <main className="main-area">
         {backend.error && <div className="sync-warning">{backend.error}</div>}
@@ -2945,6 +2953,7 @@ export default function App() {
           />
         )}
         {activeTab === 'journal' && <Journal sessions={data.sessions} setSessions={setSessions} />}
+        {activeTab === 'vocab' && <Vocab topics={data.vocabTopics} setTopics={setVocabTopics} />}
         {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} initialDraft={aiDraft} />}
         {activeTab === 'ai' && <AIAnalyzer onSaveMistake={saveAIMistake} />}
         {activeTab === 'reports' && (

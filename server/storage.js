@@ -6,7 +6,7 @@ import pg from 'pg';
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataPath = path.resolve(__dirname, '..', 'data', 'app-db.json');
-const DEFAULT_STATE = { sessions: [], mistakes: [], reports: [] };
+const DEFAULT_STATE = { sessions: [], mistakes: [], reports: [], vocabTopics: [] };
 const DEFAULT_DB = { users: [], states: {} };
 
 let pool;
@@ -21,6 +21,7 @@ function normalizeState(value) {
     sessions: Array.isArray(value?.sessions) ? value.sessions : [],
     mistakes: Array.isArray(value?.mistakes) ? value.mistakes : [],
     reports: Array.isArray(value?.reports) ? value.reports : [],
+    vocabTopics: Array.isArray(value?.vocabTopics) ? value.vocabTopics : [],
   };
 }
 
