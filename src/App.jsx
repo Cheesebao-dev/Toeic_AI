@@ -88,8 +88,24 @@ const MISTAKE_TYPES = [
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
 const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#052659', '#5483B3', '#7DA0CA', '#C1E8FF', '#021024', '#8FB7D8', '#385F8A'];
-const PART_BAR_COLOR = '#052659';
+const PART_BAR_GRADIENT_ID = 'partAccuracyBarGradient';
+const PART_BAR_COLOR = `url(#${PART_BAR_GRADIENT_ID})`;
 const SCORE_SELECT_PLACEHOLDER = 'Ch\u1ecdn';
+
+function PartBarGradientDefs() {
+  return (
+    <defs>
+      <linearGradient id={PART_BAR_GRADIENT_ID} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#9CC4E2" />
+        <stop offset="24%" stopColor="#7AA0C5" />
+        <stop offset="50%" stopColor="#456C99" />
+        <stop offset="74%" stopColor="#31547E" />
+        <stop offset="100%" stopColor="#223757" />
+      </linearGradient>
+    </defs>
+  );
+}
+
 const VOCAB_MODE = 'Vocab';
 const VOCAB_GOAL_WORDS = 1000;
 const SESSION_MODES = ['Full test', 'Listening', 'Reading', 'Part riêng', VOCAB_MODE];
@@ -1410,6 +1426,7 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
         <div className="chart-box">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={stats.partAccuracy}>
+              <PartBarGradientDefs />
               <CartesianGrid strokeDasharray="3 3" stroke="#C1E8FF" />
               <XAxis dataKey="part" />
               <YAxis domain={[0, 100]} />
@@ -1533,7 +1550,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           </button>
           <span>Vocab</span>
           <strong>{stats.vocabularyWords}</strong>
-          <small>{stats.vocabularyWords}/{stats.vocabularyGoal} đã thuộc · {stats.vocabularyTrackedWords || 0} từ / {stats.vocabularyTopics || 0} topic</small>
+          <small>{stats.vocabularyWords}/{stats.vocabularyGoal} đã thuộc</small>
         </article>
 
         <article className="overview-kpi-card margin-card">
@@ -1559,6 +1576,7 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
             <div className="overview-line-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.partAccuracy}>
+                  <PartBarGradientDefs />
                   <CartesianGrid strokeDasharray="3 3" stroke="#C1E8FF" />
                   <XAxis dataKey="part" />
                   <YAxis domain={[0, 100]} />

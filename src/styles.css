@@ -6767,18 +6767,21 @@ textarea:focus,
 }
 
 .vocab-topic-progress {
-  height: 9px;
+  height: 10px;
   overflow: hidden;
-  background: #e2e8f0;
+  background: #C1E8FF;
+  border: 1px solid rgba(125, 160, 202, 0.65);
   border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(2, 16, 36, 0.08);
 }
 
 .vocab-topic-progress i {
   display: block;
   width: var(--topic-progress);
   height: 100%;
-  background: #2f6df0;
+  background: linear-gradient(90deg, #5483B3 0%, #052659 100%);
   border-radius: inherit;
+  transition: width 180ms ease;
 }
 
 .vocab-topic-list {
@@ -7138,8 +7141,7 @@ textarea:focus,
 
 .overview-kpi-arrow,
 .overview-chip-button,
-.secondary-button,
-.vocab-topic-progress i {
+.secondary-button {
   color: #052659;
   background: #C1E8FF;
   border-color: #7DA0CA;
