@@ -9,6 +9,7 @@ import {
   Trash2,
   Volume2,
 } from 'lucide-react';
+import { EXTRA_SEEDED_TOPICS } from './vocabSeedExtra.js';
 
 const SEEDED_TOPIC_ID = 'topic-recruitment-1';
 const SEEDED_RESTORE_VERSION = 1;
@@ -444,23 +445,37 @@ function getSeedWord(english) {
   return SEEDED_WORD_BY_ENGLISH.get(clean(english).toLowerCase());
 }
 
-function createWord(seed, index, topicTitle = 'Recruitment') {
+function createWord(seed, index, topicTitle = 'Recruitment', topicId = SEEDED_TOPIC_ID) {
+  const ipaUk = seed.ipaUk || seed.ipaUs || seed.ipa || '';
+  const ipaUs = seed.ipaUs || seed.ipaUk || seed.ipa || '';
+
   return {
-    id: `${SEEDED_TOPIC_ID}-${index + 1}`,
+    id: `${topicId}-${index + 1}`,
     topic: topicTitle,
     english: seed.english,
     partOfSpeech: seed.partOfSpeech,
     vietnamese: seed.vietnamese,
-    ipa: seed.ipaUk,
-    ipaUk: seed.ipaUk,
-    ipaUs: seed.ipaUs,
-    related: seed.related,
-    example: seed.example,
-    exampleVi: seed.exampleVi,
+    ipa: ipaUs || ipaUk,
+    ipaUk,
+    ipaUs,
+    related: seed.related || '',
+    example: seed.example || '',
+    exampleVi: seed.exampleVi || '',
     correctCount: 0,
     wrongCount: 0,
     needsReview: false,
     lastResult: '',
+  };
+}
+
+function createSeedTopic(topic) {
+  return {
+    id: topic.id,
+    title: topic.title,
+    source: topic.source,
+    reviewCount: 0,
+    seedRestoreVersion: SEEDED_RESTORE_VERSION,
+    words: topic.words.map((word, index) => createWord(word, index, topic.title, topic.id)),
   };
 }
 
@@ -474,6 +489,7 @@ export function createDefaultVocabTopics() {
       seedRestoreVersion: SEEDED_RESTORE_VERSION,
       words: SEEDED_WORDS.map((word, index) => createWord(word, index, 'Topic 1: Recruitment')),
     },
+    ...EXTRA_SEEDED_TOPICS.map(createSeedTopic),
   ];
 }
 

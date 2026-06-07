@@ -727,10 +727,20 @@ function stateKey(userId) {
   return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
 }
 
+function mergeDefaultVocabTopics(vocabTopics) {
+  const defaultTopics = createDefaultVocabTopics();
+  const normalizedTopics = Array.isArray(vocabTopics) ? normalizeVocabTopics(vocabTopics) : [];
+  if (!normalizedTopics.length) return defaultTopics;
+
+  const existingTopicIds = new Set(normalizedTopics.map((topic) => topic.id));
+  return [
+    ...normalizedTopics,
+    ...defaultTopics.filter((topic) => !existingTopicIds.has(topic.id)),
+  ];
+}
+
 function withDefaultVocabTopics(state) {
-  const vocabTopics = Array.isArray(state?.vocabTopics) && state.vocabTopics.length
-    ? normalizeVocabTopics(state.vocabTopics)
-    : createDefaultVocabTopics();
+  const vocabTopics = mergeDefaultVocabTopics(state?.vocabTopics);
 
   return {
     sessions: Array.isArray(state?.sessions) ? state.sessions : [],
