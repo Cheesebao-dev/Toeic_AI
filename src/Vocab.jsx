@@ -417,7 +417,12 @@ const SEEDED_WORDS = [
   },
 ];
 
-const SEEDED_WORD_BY_ENGLISH = new Map(SEEDED_WORDS.map((word) => [word.english.toLowerCase(), word]));
+const EXTRA_SEEDED_WORDS = EXTRA_SEEDED_TOPICS.flatMap((topic) => topic.words);
+const SEEDED_TOPIC_WORDS_BY_ID = new Map([
+  [SEEDED_TOPIC_ID, SEEDED_WORDS],
+  ...EXTRA_SEEDED_TOPICS.map((topic) => [topic.id, topic.words]),
+]);
+const SEEDED_WORD_BY_ENGLISH = new Map([...SEEDED_WORDS, ...EXTRA_SEEDED_WORDS].map((word) => [word.english.toLowerCase(), word]));
 const EMPTY_DRAFT = {
   english: '',
   partOfSpeech: '',
@@ -441,8 +446,25 @@ function numberValue(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function getSeedWord(english) {
-  return SEEDED_WORD_BY_ENGLISH.get(clean(english).toLowerCase());
+function getSeedWord(english, topicId = '', partOfSpeech = '') {
+  const normalizedEnglish = clean(english).toLowerCase();
+  const normalizedPartOfSpeech = clean(partOfSpeech).toLowerCase();
+  const topicSeedWords = SEEDED_TOPIC_WORDS_BY_ID.get(topicId);
+
+  if (topicSeedWords) {
+    const exactSeed = topicSeedWords.find((word) => {
+      const sameEnglish = clean(word.english).toLowerCase() === normalizedEnglish;
+      const samePartOfSpeech = !normalizedPartOfSpeech || clean(word.partOfSpeech).toLowerCase() === normalizedPartOfSpeech;
+      return sameEnglish && samePartOfSpeech;
+    });
+
+    if (exactSeed) return exactSeed;
+
+    const matchingSeed = topicSeedWords.find((word) => clean(word.english).toLowerCase() === normalizedEnglish);
+    if (matchingSeed) return matchingSeed;
+  }
+
+  return SEEDED_WORD_BY_ENGLISH.get(normalizedEnglish);
 }
 
 function createWord(seed, index, topicTitle = 'Recruitment', topicId = SEEDED_TOPIC_ID) {
@@ -503,7 +525,7 @@ export function normalizeVocabTopics(topics) {
     let words = Array.isArray(topic?.words)
       ? topic.words.map((word) => {
           const english = clean(word?.english);
-          const seed = getSeedWord(english);
+          const seed = getSeedWord(english, id, word?.partOfSpeech || word?.type);
           const ipaUk = clean(word?.ipaUk || word?.ukIpa || word?.ipa) || seed?.ipaUk || '';
           const ipaUs = clean(word?.ipaUs || word?.usIpa) || seed?.ipaUs || ipaUk;
 

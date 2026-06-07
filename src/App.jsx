@@ -632,6 +632,20 @@ function calculateSession(session) {
   };
 }
 
+function normalizeMistakeType(type) {
+  const normalized = String(type || '').trim();
+  return MISTAKE_TYPES.includes(normalized) ? normalized : 'Khác';
+}
+
+function getSessionMistakeTypes(session) {
+  return Array.isArray(session?.mistakeTags)
+    ? session.mistakeTags
+        .map((type) => String(type || '').trim())
+        .filter(Boolean)
+        .map(normalizeMistakeType)
+    : [];
+}
+
 function calculateStats(sessions, mistakes, vocabTopics = []) {
   const totals = sessions.reduce(
     (acc, session) => {
@@ -681,14 +695,18 @@ function calculateStats(sessions, mistakes, vocabTopics = []) {
     ? practicedParts.reduce((weakest, part) => (part.accuracy < weakest.accuracy ? part : weakest)).fullPart
     : 'Chưa có dữ liệu';
 
-  const mistakeTypeCounts = mistakes.reduce((acc, mistake) => {
-    const key = mistake.mistakeType || 'Khác';
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
+  const journalMistakeTypes = sessions.flatMap(getSessionMistakeTypes);
+  const mistakeTypeCounts = [...mistakes.map((mistake) => mistake.mistakeType), ...journalMistakeTypes].reduce(
+    (acc, type) => {
+      const key = normalizeMistakeType(type);
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    {},
+  );
   const topMistakeType =
     Object.entries(mistakeTypeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Chưa có dữ liệu';
-  const openMistakes = mistakes.filter((item) => item.status !== 'Đã khắc phục').length;
+  const openMistakes = mistakes.filter((item) => item.status !== 'Đã khắc phục').length + journalMistakeTypes.length;
   const fixedMistakes = mistakes.filter((item) => item.status === 'Đã khắc phục').length;
   const latestListeningScore = calculateLatestSkillScore(sessions, 'Listening');
   const latestReadingScore = calculateLatestSkillScore(sessions, 'Reading');
