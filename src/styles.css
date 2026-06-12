@@ -7262,3 +7262,319 @@ textarea:focus,
     display: none;
   }
 }
+
+/* Mobile-first shell overrides. Keep these at the end so they win over the
+   earlier desktop/tablet rules that intentionally compress the sidebar. */
+@media (max-width: 900px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  body {
+    background:
+      linear-gradient(180deg, rgba(193, 232, 255, 0.82), rgba(243, 246, 251, 0.98) 220px),
+      #f3f6fb;
+  }
+
+  .app-shell {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  .main-area {
+    width: 100%;
+    padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar,
+  .sidebar.collapsed {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 120;
+    width: 100%;
+    height: calc(70px + env(safe-area-inset-bottom));
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    color: #475569;
+    background: rgba(255, 255, 255, 0.96);
+    border: 0;
+    border-top: 1px solid rgba(203, 213, 225, 0.86);
+    box-shadow: 0 -16px 34px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(16px);
+  }
+
+  .sidebar-head,
+  .sidebar-footer,
+  .sidebar-section-title,
+  .sidebar-brand,
+  .sidebar-toggle,
+  .sidebar-profile,
+  .sidebar-tools {
+    display: none !important;
+  }
+
+  .sidebar-scroll,
+  .sidebar.collapsed .sidebar-scroll {
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .sidebar-section {
+    display: block;
+  }
+
+  .nav-list {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .nav-list button,
+  .sidebar.collapsed .nav-list button {
+    display: flex;
+    min-height: 54px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0;
+    color: #64748b;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 14px;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .nav-list button:hover,
+  .sidebar.collapsed .nav-list button:hover {
+    color: #245ee0;
+    background: #eff6ff !important;
+  }
+
+  .sidebar-link-copy,
+  .sidebar-tool-label {
+    display: none !important;
+  }
+
+  .sidebar-icon-frame,
+  .sidebar.collapsed .sidebar-icon-frame {
+    display: inline-grid !important;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    place-items: center;
+    color: inherit;
+    border-radius: 13px;
+  }
+
+  .nav-list button svg,
+  .sidebar.collapsed .nav-list button svg {
+    color: currentColor;
+  }
+
+  .nav-list button.active,
+  .sidebar.collapsed .nav-list button.active {
+    color: #ffffff;
+    background: transparent !important;
+  }
+
+  .nav-list button.active .sidebar-icon-frame,
+  .sidebar.collapsed .nav-list button.active .sidebar-icon-frame {
+    color: #ffffff;
+    background: linear-gradient(135deg, #052659, #5483B3);
+    box-shadow: 0 10px 22px rgba(5, 38, 89, 0.22) !important;
+  }
+
+  .page-grid,
+  .two-column,
+  .overview-v2,
+  .report-history-page,
+  .vocab-topic-overview,
+  .vocab-quiz-focus,
+  .vocab-detail-page,
+  .vocab-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .form-panel,
+  .vocab-sidebar-panel {
+    position: static;
+  }
+
+  .record-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .assistant-widget {
+    right: 14px;
+    bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .assistant-panel {
+    width: min(380px, calc(100vw - 24px));
+    max-height: calc(100dvh - 122px - env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 560px) {
+  .main-area {
+    padding: 10px 10px calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .panel,
+  .record-card,
+  .analysis-card,
+  .overview-command,
+  .overview-kpi-card,
+  .overview-chart-card,
+  .vocab-topic-card,
+  .vocab-sidebar-panel,
+  .vocab-editor-panel,
+  .vocab-quiz-panel {
+    border-radius: 8px;
+  }
+
+  .panel,
+  .overview-command,
+  .overview-kpi-card,
+  .overview-chart-card,
+  .vocab-sidebar-panel,
+  .vocab-editor-panel,
+  .vocab-quiz-panel {
+    padding: 14px;
+  }
+
+  .panel-heading,
+  .overview-card-heading,
+  .report-history-card-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .overview-command-actions,
+  .form-actions,
+  .vocab-result-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .overview-command-actions .primary-button,
+  .overview-command-actions .ghost-button,
+  .form-actions .primary-button,
+  .form-actions .secondary-button,
+  .vocab-result-actions .primary-button,
+  .vocab-result-actions .secondary-button {
+    width: 100%;
+  }
+
+  .filter-row,
+  .form-grid,
+  .option-grid,
+  .vocab-summary-row,
+  .vocab-add-form,
+  .vocab-word-extra {
+    grid-template-columns: 1fr;
+  }
+
+  .record-main,
+  .analysis-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .record-score {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .record-meta,
+  .answer-row,
+  .record-tags,
+  .mistake-tag-picker {
+    gap: 7px;
+  }
+
+  .record-meta span,
+  .answer-row span,
+  .record-tags span,
+  .mistake-tag-picker button,
+  .mistake-type-strip span {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .overview-table-row {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .session-pill,
+  .session-score {
+    justify-self: stretch;
+    margin-left: 48px;
+  }
+
+  .part-focus-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .vocab-topic-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vocab-word-table {
+    overflow: visible;
+  }
+
+  .vocab-word-row {
+    gap: 8px;
+    padding: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .vocab-row-actions {
+    justify-content: flex-start;
+  }
+
+  .assistant-widget {
+    right: 12px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+
+  .assistant-panel {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 112px - env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 380px) {
+  .sidebar,
+  .sidebar.collapsed {
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 6px 7px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .nav-list {
+    gap: 2px;
+  }
+
+  .nav-list button,
+  .sidebar.collapsed .nav-list button {
+    min-height: 50px;
+  }
+
+  .sidebar-icon-frame,
+  .sidebar.collapsed .sidebar-icon-frame {
+    width: 34px;
+    height: 34px;
+  }
+}
