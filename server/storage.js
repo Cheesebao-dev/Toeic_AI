@@ -36,13 +36,37 @@ function publicUser(user) {
 }
 
 function createPool() {
-  if (!process.env.DATABASE_URL) return null;
-  const needsSsl = !process.env.DATABASE_URL.includes('localhost') && process.env.PGSSLMODE !== 'disable';
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return null;
+
+  const connectionString = stripPgSslQueryParams(databaseUrl);
+  const sslMode = getPgSslMode(databaseUrl);
+  const needsSsl = !databaseUrl.includes('localhost') && sslMode !== 'disable';
+
   return new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     max: 5,
     ssl: needsSsl ? { rejectUnauthorized: false } : false,
   });
+}
+
+function stripPgSslQueryParams(databaseUrl) {
+  try {
+    const url = new URL(databaseUrl);
+    ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'].forEach((key) => url.searchParams.delete(key));
+    return url.toString();
+  } catch {
+    return databaseUrl;
+  }
+}
+
+function getPgSslMode(databaseUrl) {
+  if (process.env.PGSSLMODE) return process.env.PGSSLMODE;
+  try {
+    return new URL(databaseUrl).searchParams.get('sslmode') || '';
+  } catch {
+    return '';
+  }
 }
 
 async function initPostgres() {
@@ -94,6 +118,17 @@ async function writeFileDb(db) {
 
 export function getStorageMode() {
   return process.env.DATABASE_URL ? 'postgres' : 'file';
+}
+
+export async function checkStorageConnection() {
+  if (!process.env.DATABASE_URL) {
+    await readFileDb();
+    return { ok: true, mode: 'file' };
+  }
+
+  const db = await initPostgres();
+  await db.query('select 1');
+  return { ok: true, mode: 'postgres' };
 }
 
 export function getPublicUser(user) {

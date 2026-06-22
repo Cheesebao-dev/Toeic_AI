@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  checkStorageConnection,
   createUser,
   findUserByEmail,
   findUserById,
@@ -352,15 +353,24 @@ Dữ liệu người học:
 - Câu hỏi nhập bằng text: ${questionText || 'Không có text, hãy đọc từ file/ảnh nếu được gửi kèm.'}
 `;
 
-app.get('/api/health', (_req, res) => {
-  res.json({
-    ok: true,
+app.get('/api/health', async (_req, res) => {
+  let storageHealth;
+  try {
+    storageHealth = await checkStorageConnection();
+  } catch (error) {
+    storageHealth = { ok: false, mode: getStorageMode(), error: error.message };
+  }
+
+  res.status(storageHealth.ok ? 200 : 503).json({
+    ok: storageHealth.ok,
     provider: AI_PROVIDER,
     model: AI_PROVIDER === 'openai-compatible' || AI_PROVIDER === 'openai' ? OPENAI_MODEL : MODEL,
     hasGeminiKey: Boolean(GEMINI_API_KEY),
     hasOpenAiKey: Boolean(OPENAI_API_KEY),
     auth: 'email-password',
     storage: getStorageMode(),
+    storageOk: storageHealth.ok,
+    storageError: storageHealth.error || null,
   });
 });
 
