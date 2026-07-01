@@ -4159,6 +4159,18 @@ textarea:focus {
   font-weight: 950;
 }
 
+.part-focus-meter.complete,
+.vocab-topic-progress.complete {
+  background: linear-gradient(90deg, #052659 0%, #1f4573 48%, #5483B3 100%);
+}
+
+.part-focus-meter.complete span,
+.vocab-topic-progress.complete i {
+  width: 100%;
+  background: linear-gradient(90deg, #052659 0%, #1f4573 48%, #5483B3 100%);
+  box-shadow: none;
+}
+
 .mistake-type-strip {
   display: flex;
   flex-wrap: wrap;

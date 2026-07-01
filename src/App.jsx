@@ -1620,7 +1620,10 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
                   <strong>{part.fullPart}</strong>
                   <span>{part.skill}</span>
                 </div>
-                <div className="part-focus-meter" style={{ '--part-value': `${part.accuracy}%` }}>
+                <div
+                  className={`part-focus-meter ${part.accuracy >= 100 ? 'complete' : ''}`}
+                  style={{ '--part-value': `${part.accuracy}%` }}
+                >
                   <span></span>
                 </div>
                 <strong>{part.accuracy}%</strong>

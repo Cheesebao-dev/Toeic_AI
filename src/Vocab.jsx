@@ -904,7 +904,10 @@ export default function Vocab({ topics, setTopics }) {
                 <span>{topic.source || 'Vocab topic'}</span>
                 <strong>{topic.title}</strong>
                 <small>{learned}/{total} từ đã thuộc · {numberValue(topic.reviewCount)} lượt ôn</small>
-                <div className="vocab-topic-progress" style={{ '--topic-progress': `${progress}%` }}>
+                <div
+                  className={`vocab-topic-progress ${progress >= 100 ? 'complete' : ''}`}
+                  style={{ '--topic-progress': `${progress}%` }}
+                >
                   <i />
                 </div>
                 <em>{review} từ cần ôn</em>
