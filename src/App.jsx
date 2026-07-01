@@ -2041,141 +2041,8 @@ function Journal({ sessions, setSessions }) {
   );
 }
 
-function MistakeForm({ draft, setDraft, onSave, editingId, onCancel }) {
-  const selectedPart = PARTS.find((part) => part.id === draft.part);
-
-  function updateOption(key, value) {
-    setDraft((current) => ({ ...current, options: { ...current.options, [key]: value } }));
-  }
-
-  return (
-    <form onSubmit={onSave} className="stack-form">
-      <div className="form-grid">
-        <Field label="Ngày">
-          <input type="date" value={draft.createdAt} onChange={(event) => setDraft({ ...draft, createdAt: event.target.value })} />
-        </Field>
-        <Field label="Nguồn đề">
-          <input value={draft.sourceTitle} onChange={(event) => setDraft({ ...draft, sourceTitle: event.target.value })} placeholder="ETS Test 01" />
-        </Field>
-        <Field label="Part">
-          <SelectMenu
-            value={draft.part}
-            options={PARTS.map((part) => ({ value: part.id, label: part.id, detail: part.skill }))}
-            onChange={(nextPart) => {
-              const part = PARTS.find((item) => item.id === nextPart);
-              setDraft({ ...draft, part: nextPart, skill: part?.skill || selectedPart?.skill || 'Reading' });
-            }}
-          />
-        </Field>
-        <Field label="Câu số">
-          <input value={draft.questionNumber} onChange={(event) => setDraft({ ...draft, questionNumber: event.target.value })} placeholder="101" />
-        </Field>
-      </div>
-
-      <Field label="Câu hỏi">
-        <textarea value={draft.questionText} onChange={(event) => setDraft({ ...draft, questionText: event.target.value })} rows={4} />
-      </Field>
-
-      <div className="option-grid">
-        {['A', 'B', 'C', 'D'].map((key) => (
-          <Field key={key} label={`Đáp án ${key}`}>
-            <input value={draft.options?.[key] || ''} onChange={(event) => updateOption(key, event.target.value)} />
-          </Field>
-        ))}
-      </div>
-
-      <div className="form-grid">
-        <Field label="Bạn chọn">
-          <SelectMenu
-            value={draft.userAnswer}
-            options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
-            placeholder="Chọn đáp án"
-            onChange={(answer) => setDraft({ ...draft, userAnswer: answer })}
-          />
-        </Field>
-        <Field label="Đáp án đúng">
-          <SelectMenu
-            value={draft.correctAnswer}
-            options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
-            placeholder="Chọn đáp án"
-            onChange={(answer) => setDraft({ ...draft, correctAnswer: answer })}
-          />
-        </Field>
-        <Field label="Loại lỗi">
-          <SelectMenu
-            value={draft.mistakeType}
-            options={MISTAKE_TYPES}
-            onChange={(mistakeType) => setDraft({ ...draft, mistakeType })}
-          />
-        </Field>
-        <Field label="Trạng thái">
-          <SelectMenu
-            value={draft.status}
-            options={STATUSES}
-            onChange={(status) => setDraft({ ...draft, status })}
-          />
-        </Field>
-      </div>
-
-      <Field label="Giải thích">
-        <textarea value={draft.explanation} onChange={(event) => setDraft({ ...draft, explanation: event.target.value })} rows={4} />
-      </Field>
-      <Field label="Bản dịch">
-        <textarea value={draft.vietnameseTranslation} onChange={(event) => setDraft({ ...draft, vietnameseTranslation: event.target.value })} rows={2} />
-      </Field>
-      <Field label="Ghi chú cá nhân">
-        <textarea value={draft.personalNote} onChange={(event) => setDraft({ ...draft, personalNote: event.target.value })} rows={3} />
-      </Field>
-
-      <div className="form-actions">
-        <button className="primary-button" type="submit">
-          <Save size={18} />
-          {editingId ? 'Cập nhật' : 'Lưu lỗi sai'}
-        </button>
-        {editingId && (
-          <button type="button" className="ghost-button" onClick={onCancel}>
-            <X size={18} />
-            Hủy
-          </button>
-        )}
-      </div>
-    </form>
-  );
-}
-
-function Mistakes({ mistakes, setMistakes, initialDraft }) {
-  const [draft, setDraft] = useState(initialDraft || createBlankMistake());
-  const [editingId, setEditingId] = useState(null);
+function Mistakes({ mistakes, setMistakes }) {
   const [filters, setFilters] = useState({ query: '', part: 'Tất cả', status: 'Tất cả', type: 'Tất cả' });
-
-  useEffect(() => {
-    if (initialDraft) {
-      setDraft(initialDraft);
-      setEditingId(null);
-    }
-  }, [initialDraft]);
-
-  function reset() {
-    setDraft(createBlankMistake());
-    setEditingId(null);
-  }
-
-  function saveMistake(event) {
-    event.preventDefault();
-    const selectedPart = PARTS.find((part) => part.id === draft.part);
-    const record = {
-      ...draft,
-      id: editingId || uid(),
-      skill: selectedPart?.skill || draft.skill,
-      questionText: draft.questionText.trim(),
-      updatedAt: new Date().toISOString(),
-      createdAt: draft.createdAt || today(),
-    };
-    setMistakes((current) =>
-      editingId ? current.map((item) => (item.id === editingId ? record : item)) : [record, ...current],
-    );
-    reset();
-  }
 
   const filtered = mistakes.filter((mistake) => {
     const query = filters.query.trim().toLowerCase();
@@ -2194,24 +2061,10 @@ function Mistakes({ mistakes, setMistakes, initialDraft }) {
   });
 
   return (
-    <div className="two-column">
-      <section className="panel form-panel">
+    <div className="page-grid mistakes-page">
+      <section className="panel wide">
         <div className="panel-heading">
-          <h2>{editingId ? 'Sửa lỗi sai' : 'Thêm lỗi sai'}</h2>
-          <span>{draft.skill}</span>
-        </div>
-        <MistakeForm
-          draft={draft}
-          setDraft={setDraft}
-          onSave={saveMistake}
-          editingId={editingId}
-          onCancel={reset}
-        />
-      </section>
-
-      <section className="panel">
-        <div className="panel-heading">
-          <h2>Sổ tay</h2>
+          <h2>Danh sách lỗi sai</h2>
           <span>{filtered.length}/{mistakes.length} lỗi</span>
         </div>
         <div className="filter-row">
@@ -2268,15 +2121,6 @@ function Mistakes({ mistakes, setMistakes, initialDraft }) {
                     }
                   >
                     <CheckCircle2 size={17} />
-                  </IconButton>
-                  <IconButton
-                    title="Sửa"
-                    onClick={() => {
-                      setEditingId(mistake.id);
-                      setDraft({ ...createBlankMistake(), ...mistake });
-                    }}
-                  >
-                    <Edit3 size={17} />
                   </IconButton>
                   <IconButton title="Xóa" className="danger" onClick={() => setMistakes((current) => current.filter((item) => item.id !== mistake.id))}>
                     <Trash2 size={17} />
@@ -2777,7 +2621,6 @@ export default function App() {
   const [data, setData] = useState({ ...EMPTY_STATE, vocabTopics: createDefaultVocabTopics() });
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsed, setCollapsed] = useState(false);
-  const [aiDraft, setAiDraft] = useState(null);
   const [auth, setAuth] = useState({ checked: false, user: null, error: '', loading: false });
   const [backend, setBackend] = useState({
     checked: false,
@@ -2941,7 +2784,6 @@ export default function App() {
 
   function saveAIMistake(record) {
     setMistakes((current) => [record, ...current]);
-    setAiDraft(null);
     setActiveTab('mistakes');
   }
 
@@ -3006,7 +2848,7 @@ export default function App() {
         )}
         {activeTab === 'journal' && <Journal sessions={data.sessions} setSessions={setSessions} />}
         {activeTab === 'vocab' && <Vocab topics={data.vocabTopics} setTopics={setVocabTopics} />}
-        {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} initialDraft={aiDraft} />}
+        {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} />}
         {activeTab === 'ai' && <AIAnalyzer onSaveMistake={saveAIMistake} />}
         {activeTab === 'reports' && (
           <Reports
