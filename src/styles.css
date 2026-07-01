@@ -3856,7 +3856,7 @@ textarea:focus {
 
 .overview-report-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.34fr) minmax(340px, 0.66fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
 }

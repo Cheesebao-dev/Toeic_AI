@@ -1518,12 +1518,6 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
   const latestReport = reports[0];
   const previousScore = scoreHistory.length > 1 ? scoreHistory[scoreHistory.length - 2].score || 0 : 0;
   const scoreDelta = stats.latestScore && previousScore ? stats.latestScore - previousScore : 0;
-  const reviewData = [
-    { name: 'Cần xử lý', value: stats.openMistakes, color: '#052659' },
-    { name: 'Đã khắc phục', value: stats.fixedMistakes, color: '#7DA0CA' },
-  ];
-  const reviewTotal = reviewData.reduce((sum, item) => sum + item.value, 0);
-  const openMistakePercent = reviewTotal ? Math.round((stats.openMistakes / reviewTotal) * 100) : 0;
   const focusParts = [...stats.partAccuracy]
     .filter((part) => part.total > 0)
     .sort((a, b) => a.accuracy - b.accuracy)
@@ -1581,14 +1575,6 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           <small>{stats.vocabularyWords}/{stats.vocabularyGoal} đã thuộc</small>
         </article>
 
-        <article className="overview-kpi-card margin-card">
-          <button className="overview-kpi-arrow" type="button" aria-label="Mở sổ lỗi sai" onClick={() => setActiveTab('mistakes')}>
-            <AlertCircle size={17} />
-          </button>
-          <span>Lỗi đang mở</span>
-          <strong>{stats.openMistakes}</strong>
-          <small>Top lỗi: {stats.topMistakeType}</small>
-        </article>
       </section>
 
       <section className="overview-report-grid">
@@ -1618,42 +1604,6 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           )}
         </article>
 
-        <article className="overview-chart-card activity-card">
-          <div className="overview-card-heading">
-            <div>
-              <h2>Review Activity</h2>
-              <span>Trạng thái lỗi sai</span>
-            </div>
-            <button className="overview-chip-button" type="button">Review</button>
-          </div>
-          <div className="activity-layout">
-            <div className="activity-donut">
-              <div
-                className={`activity-ring ${reviewTotal ? '' : 'empty'}`}
-                style={{ '--activity-open': `${openMistakePercent}%` }}
-              >
-                <div className="activity-center">
-                  <strong>{reviewTotal}</strong>
-                  <span>Tổng lỗi</span>
-                </div>
-              </div>
-            </div>
-            <div className="activity-legend">
-              <div>
-                <strong>{stats.openMistakes}</strong>
-                <span><i className="legend-pink"></i>Cần xử lý</span>
-              </div>
-              <div>
-                <strong>{stats.fixedMistakes}</strong>
-                <span><i className="legend-green"></i>Đã khắc phục</span>
-              </div>
-              <div>
-                <strong>{stats.weakestPart}</strong>
-                <span><i className="legend-blue"></i>Part yếu</span>
-              </div>
-            </div>
-          </div>
-        </article>
       </section>
 
       <section className="overview-lower-grid">
