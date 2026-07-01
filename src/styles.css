@@ -6354,10 +6354,6 @@ textarea:focus,
     font-size: 20px;
   }
 
-  .overview-report-grid {
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-  }
-
   .record-list {
     max-height: calc(100vh - 118px);
   }

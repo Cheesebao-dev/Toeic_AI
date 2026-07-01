@@ -29,7 +29,6 @@ import {
   Sparkles,
   Target,
   Trash2,
-  Upload,
   UserRound,
   X,
 } from 'lucide-react';
@@ -86,7 +85,6 @@ const MISTAKE_TYPES = [
 ];
 
 const STATUSES = ['Chưa xử lý', 'Đang ôn lại', 'Đã hiểu', 'Đã khắc phục', 'Cần ôn lại sau'];
-const ANSWERS = ['', 'A', 'B', 'C', 'D'];
 const PIE_COLORS = ['#052659', '#5483B3', '#7DA0CA', '#C1E8FF', '#021024', '#8FB7D8', '#385F8A'];
 const PART_BAR_GRADIENT_ID = 'partAccuracyBarGradient';
 const PART_BAR_COLOR = `url(#${PART_BAR_GRADIENT_ID})`;
@@ -205,29 +203,6 @@ function createBlankSession() {
     mistakeTags: [],
     reflection: '',
     partScores: createBlankPartScores(),
-  };
-}
-
-function createBlankMistake() {
-  return {
-    id: '',
-    createdAt: today(),
-    sourceTitle: '',
-    part: 'Part 5',
-    skill: 'Reading',
-    questionNumber: '',
-    questionText: '',
-    options: { A: '', B: '', C: '', D: '' },
-    userAnswer: '',
-    correctAnswer: '',
-    explanation: '',
-    wrongOptionAnalysis: '',
-    vietnameseTranslation: '',
-    mistakeType: 'Khác',
-    improvementTip: '',
-    status: 'Chưa xử lý',
-    personalNote: '',
-    aiConfidence: '',
   };
 }
 
@@ -1292,7 +1267,6 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onLogout, u
     { id: 'journal', label: 'Nhật ký', detail: 'Buổi luyện đề', icon: ClipboardList },
     { id: 'vocab', label: 'Vocab', detail: 'Quiz từ vựng', icon: BookOpen },
     { id: 'mistakes', label: 'Sổ lỗi sai', detail: 'Review câu sai', icon: NotebookTabs },
-    { id: 'ai', label: 'AI phân tích', detail: 'Gemini feedback', icon: Sparkles },
     { id: 'reports', label: 'Báo cáo', detail: 'Tiến độ học', icon: FileText },
     { id: 'reportHistory', label: 'Lịch sử báo cáo', detail: 'Đọc lại báo cáo', icon: History },
   ];
@@ -1406,10 +1380,6 @@ function Overview({ sessions, mistakes, reports, stats, setActiveTab }) {
             <button className="primary-button" onClick={() => setActiveTab('journal')}>
               <Plus size={18} />
               Thêm nhật ký
-            </button>
-            <button className="ghost-button" onClick={() => setActiveTab('ai')}>
-              <Sparkles size={18} />
-              Phân tích câu sai
             </button>
           </div>
         </div>
@@ -1532,10 +1502,6 @@ function OverviewV2({ sessions, mistakes, reports, stats, setActiveTab }) {
           <p>Theo dõi điểm, độ chính xác, lỗi sai và nhịp học TOEIC trong một màn hình.</p>
         </div>
         <div className="overview-command-actions">
-          <button className="ghost-button" onClick={() => setActiveTab('ai')}>
-            <Sparkles size={18} />
-            Phân tích AI
-          </button>
           <button className="primary-button" onClick={() => setActiveTab('journal')}>
             <Plus size={18} />
             Thêm nhật ký
@@ -2137,163 +2103,6 @@ function Mistakes({ mistakes, setMistakes }) {
   );
 }
 
-function AIAnalyzer({ onSaveMistake }) {
-  const [form, setForm] = useState({ part: 'Part 5', userAnswer: '', questionText: '' });
-  const [file, setFile] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function analyze(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-    setResults([]);
-    try {
-      const payload = new FormData();
-      payload.append('part', form.part);
-      payload.append('userAnswer', form.userAnswer);
-      payload.append('questionText', form.questionText);
-      if (file) payload.append('file', file);
-      const response = await apiFetch('/api/ai/analyze', {
-        method: 'POST',
-        credentials: 'include',
-        body: payload,
-      });
-      const data = await readJsonResponse(response);
-      if (!response.ok) throw new Error(data.error || 'Không phân tích được');
-      setResults(data.questions || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handlePaste(event) {
-    const pastedFile = [...event.clipboardData.files].find((item) => item.type.startsWith('image/'));
-    if (pastedFile) setFile(pastedFile);
-  }
-
-  function saveResult(result) {
-    const partMeta = PARTS.find((item) => item.id === form.part);
-    onSaveMistake({
-      ...createBlankMistake(),
-      id: uid(),
-      createdAt: today(),
-      part: form.part,
-      skill: partMeta?.skill || 'Reading',
-      questionNumber: result.question_number || '',
-      questionText: result.question_text || '',
-      options: { A: '', B: '', C: '', D: '', ...(result.options || {}) },
-      userAnswer: result.user_answer || form.userAnswer,
-      correctAnswer: result.correct_answer || '',
-      explanation: result.explanation || '',
-      wrongOptionAnalysis: result.wrong_option_analysis ? JSON.stringify(result.wrong_option_analysis, null, 2) : '',
-      vietnameseTranslation: result.vietnamese_translation || '',
-      mistakeType: MISTAKE_TYPES.includes(result.mistake_type) ? result.mistake_type : 'Khác',
-      improvementTip: result.improvement_tip || '',
-      status: result.is_correct ? 'Đã hiểu' : 'Chưa xử lý',
-      aiConfidence: result.confidence_score ?? '',
-    });
-  }
-
-  return (
-    <div className="two-column ai-layout">
-      <section className="panel form-panel">
-        <div className="panel-heading">
-          <h2>AI phân tích</h2>
-          <span>Gemini 2.5 Flash</span>
-        </div>
-        <form onSubmit={analyze} className="stack-form">
-        <div className="form-grid">
-          <Field label="Part">
-              <SelectMenu
-                value={form.part}
-                options={PARTS.map((part) => ({ value: part.id, label: part.id, detail: part.skill }))}
-                onChange={(part) => setForm({ ...form, part })}
-              />
-            </Field>
-            <Field label="Bạn chọn">
-              <SelectMenu
-                value={form.userAnswer}
-                options={ANSWERS.map((answer) => ({ value: answer, label: answer || 'Chưa chọn' }))}
-                placeholder="Chọn đáp án"
-                onChange={(userAnswer) => setForm({ ...form, userAnswer })}
-              />
-            </Field>
-          </div>
-          <Field label="Câu hỏi">
-            <textarea
-              value={form.questionText}
-              onChange={(event) => setForm({ ...form, questionText: event.target.value })}
-              rows={8}
-              placeholder="Dán câu hỏi TOEIC tại đây"
-            />
-          </Field>
-          <div className="drop-zone" onPaste={handlePaste} tabIndex={0}>
-            <Upload size={22} />
-            <input
-              type="file"
-              accept="image/*,.pdf,.doc,.docx"
-              onChange={(event) => setFile(event.target.files?.[0] || null)}
-            />
-            <span>{file ? file.name : 'Ảnh, PDF, Word hoặc Ctrl+V ảnh'}</span>
-          </div>
-          {file && (
-            <button type="button" className="text-button" onClick={() => setFile(null)}>
-              Bỏ file
-            </button>
-          )}
-          {error && <div className="error-box"><AlertCircle size={18} />{error}</div>}
-          <button className="primary-button" type="submit" disabled={loading || (!form.questionText.trim() && !file)}>
-            <Brain size={18} />
-            {loading ? 'Đang phân tích...' : 'Bắt đầu giải'}
-          </button>
-        </form>
-      </section>
-
-      <section className="panel">
-        <div className="panel-heading">
-          <h2>Kết quả</h2>
-          <span>{results.length} câu</span>
-        </div>
-        <div className="record-list">
-          {results.length ? (
-            results.map((result, index) => (
-              <article className="analysis-card" key={`${result.question_number}-${index}`}>
-                <div className="analysis-head">
-                  <div>
-                    <span>Câu {result.question_number || index + 1}</span>
-                    <strong>Đáp án đúng: {result.correct_answer || '-'}</strong>
-                  </div>
-                  <span className={`status-pill ${result.is_correct ? 'done' : ''}`}>
-                    {result.is_correct ? 'Đúng' : 'Cần ôn'}
-                  </span>
-                </div>
-                <p className="question-preview">{result.question_text}</p>
-                <div className="answer-row">
-                  <span>Bạn chọn: {result.user_answer || form.userAnswer || '-'}</span>
-                  <span>Lỗi: {result.mistake_type || 'Khác'}</span>
-                </div>
-                <p>{result.explanation}</p>
-                {result.vietnamese_translation && <p className="translation">{result.vietnamese_translation}</p>}
-                {result.improvement_tip && <p className="tip-box">{result.improvement_tip}</p>}
-                <button className="secondary-button" onClick={() => saveResult(result)}>
-                  <Save size={17} />
-                  Lưu vào sổ tay
-                </button>
-              </article>
-            ))
-          ) : (
-            <EmptyState title="Chưa có kết quả AI" />
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function Reports({ stats, sessions, mistakes, reports, setReports }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -2782,11 +2591,6 @@ export default function App() {
     }));
   }
 
-  function saveAIMistake(record) {
-    setMistakes((current) => [record, ...current]);
-    setActiveTab('mistakes');
-  }
-
   async function handleAuthSubmit(mode, form) {
     setAuth((current) => ({ ...current, loading: true, error: '' }));
     try {
@@ -2849,7 +2653,6 @@ export default function App() {
         {activeTab === 'journal' && <Journal sessions={data.sessions} setSessions={setSessions} />}
         {activeTab === 'vocab' && <Vocab topics={data.vocabTopics} setTopics={setVocabTopics} />}
         {activeTab === 'mistakes' && <Mistakes mistakes={data.mistakes} setMistakes={setMistakes} />}
-        {activeTab === 'ai' && <AIAnalyzer onSaveMistake={saveAIMistake} />}
         {activeTab === 'reports' && (
           <Reports
             stats={stats}
